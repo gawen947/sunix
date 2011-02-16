@@ -1,0 +1,3 @@
+true - /bin/true
+false - /bin/false
+scat - similar to /bin/cat
