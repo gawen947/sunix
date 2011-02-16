@@ -6,7 +6,7 @@ CFLAGS=-std=c99 -fomit-frame-pointer -O3
 PREF=/usr/local/
 BIN=$(PREF)bin/
 
-all: true false quickexec autorestart strip
+all: true false quickexec autorestart uptime-ng strip
 
 true: true.c common.h
 	@echo -n COMPILING
@@ -24,6 +24,10 @@ quickexec: quickexec.c
 	@echo -n COMPILING
 	@$(CC) $(CFLAGS) $^ -o $@
 	@echo ... done.
+uptime-ng: uptime-ng.c
+	@echo -n COMPILING
+	@$(CC) $(CFLAGS) $^ -o $@
+	@echo ... done.
 .PHONY : clean install
 
 clean:
@@ -35,11 +39,13 @@ strip:
 	@strip false
 	@strip quickexec
 	@strip autorestart
+	@strip uptime-ng
 	@echo ... done.
 
 install: all
 	$(INSTALL) quickexec $(BIN)
 	$(INSTALL) autorestart $(BIN)
+	$(INSTALL) uptime-ng $(BIN)
 	#$(INSTALL) true $(BIN)
 	#$(INSTALL) false $($IN)
 	@echo "The following components should be installed manually"
