@@ -282,9 +282,8 @@ void _start(unsigned int first_arg)
 
   ret = main(argc, argv);
   exit(ret);
-#else
-  __asm__("xor %ebp, %ebp;"       \
-          "mov (%rsp), %rdi;"     \
+#else /* __x86_64__ */
+  __asm__("mov (%rsp), %rdi;"     \
           "lea 8(%rsp), %rsi;"    \
           "call main;"            \
           "mov %rax, %rdi;"       \

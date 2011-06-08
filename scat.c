@@ -21,6 +21,9 @@
 /* read one disk block */
 #define BUFFER_SIZE 4096
 
+/* path for real cat */
+#define REAL_CAT    "/bin/cat.real"
+
 /* display a specific file */
 static void show(char *filename)
 {
@@ -41,8 +44,12 @@ static void show(char *filename)
 int main(int argc, char **argv)
 {
   argc--;
-  while(argc > 0)
+  while(argc > 0) {
+    /* anything that begins with '-' is an argument for real cat */
+    if(*argv[argc] == '-')
+      execve("/bin/cat.real", argv, NULL);
     show(argv[argc--]);
+  }
 
   exit(0);
 }
