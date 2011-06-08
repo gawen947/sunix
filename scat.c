@@ -39,6 +39,8 @@ static void show(char *filename)
     n = read(fd, buf, BUFFER_SIZE);
     write(STDOUT_FILENO, buf, n);
   } while(n == BUFFER_SIZE);
+
+  close(fd);
 }
 
 int main(int argc, char **argv)
