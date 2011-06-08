@@ -1,5 +1,5 @@
 /* File: tlibc.c
-   Time-stamp: <2010-11-25 19:17:44 gawen>
+   Time-stamp: <2011-06-09 00:16:31 gawen>
 
    Copyright (C) 2010 David Hauweele <david.hauweele@gmail.com>
 
@@ -289,6 +289,6 @@ void _start(unsigned int first_arg)
           "mov %rax, %rdi;"       \
           "mov $60, %rax;"        \
           "syscall;"
-          ); 
+          );
 #endif
 }

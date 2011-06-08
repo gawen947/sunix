@@ -18,8 +18,8 @@
 
 #include "tlibc.h"
 
-/* read one disk block */
-#define BUFFER_SIZE 4096
+/* same value as original cat command */
+#define BUFFER_SIZE 32768
 
 /* path for real cat */
 #define REAL_CAT    "/bin/cat.real"
@@ -48,6 +48,8 @@ int main(int argc, char **argv)
     /* anything that begins with '-' is an argument for real cat */
     if(*argv[argc] == '-')
       execve("/bin/cat.real", argv, NULL);
+
+    /* show this file */
     show(argv[argc--]);
   }
 
