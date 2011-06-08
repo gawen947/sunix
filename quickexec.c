@@ -1,5 +1,5 @@
 /* File: quickexec.c
-   Time-stamp: <2010-11-04 15:47:08 gawen>
+   Time-stamp: <2011-04-25 01:48:00 gawen>
 
    Copyright (C) 2010 David Hauweele <david.hauweele@gmail.com>
 
@@ -33,7 +33,7 @@
                    L_ARG_MAX : sysconf(_SC_ARG_MAX))
 
 /* first line max length */
-#define FL_MAX PATH_MAX
+#define FL_MAX 1024
 
 int main(int argc, char *argv[])
 {

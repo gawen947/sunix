@@ -1,5 +1,5 @@
-/* File: scat.c
-   Time-stamp: <2011-06-08 21:48:48 gawen>
+/* File: _i386_syscall.c
+   Time-stamp: <2010-11-24 00:39:47 gawen>
 
    Copyright (C) 2010 David Hauweele <david.hauweele@gmail.com>
 
@@ -18,33 +18,10 @@
 
 #include "tlibc.h"
 
-/* read one disk block */
-#define BUFFER_SIZE 4096
-
-/* display a specific file */
-static void show(char *filename)
+int _syscall_error(void)
 {
-  char buf[BUFFER_SIZE];
-  register int n = BUFFER_SIZE;
-  register int fd;
-
-  fd = open(filename, O_RDONLY, 0);
-
-  do {
-    n = read(fd, buf, BUFFER_SIZE);
-    write(STDOUT_FILENO, buf, n);
-    print("prout");
-  } while(n == BUFFER_SIZE);
+  register int eax __asm__("%eax");
+  errno = -eax;
+  return -1;
 }
 
-int main(int argc, char **argv)
-{
-  return argc;
-
-  while(argc--) {
-    print("proutA");
-    show(argv[argc]);
-  }
-
-  exit(argc);
-}

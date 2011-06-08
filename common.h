@@ -49,6 +49,7 @@
                                 : "g" (b), "g" (count)         \
                                 : "eax", "ebx", "ecx", "edx");
 
+/* TODO: review this code this is ugly ! */  
 #define _exit_0() __asm__("xor %eax, %eax;" \
                           "mov %eax, %ebx;" \
                           "inc %eax;"       \
@@ -67,11 +68,12 @@
 #else
 /* __x86_64__ */
 /* FIXME: don't work 64bits register vs 32 bits unsigned int or something */
-#define print(s,count) __asm__("mov $1, %%rax;"              \
-                               "mov $1, %%rdi;"              \
-                               "mov %0, %%rsi;"              \
-                               "mov %1, %%rdx;"              \
-                               "syscall;"                   \
+/* for now we rather use tlibc for that */
+#define print(s,count) __asm__("mov $1, %%rax;"               \
+                               "mov $1, %%rdi;"               \
+                               "mov %0, %%rsi;"               \
+                               "mov %1, %%rdx;"               \
+                               "syscall;"                     \
                                :: "g" (s), "g" (count)        \
                                : "rax", "rdi", "rsi", "rdx");
 
@@ -85,8 +87,16 @@
                                 : "g" (b), "g" (count)         \
                                 : "rax", "rdi", "rsi", "rdx");
 
+#define _exit_0() __asm__("mov $60, %rax;" \
+                          "mov $0, %di;" \
+                          "syscall;" );
+
+#define _exit_1() __asm__("mov $60, %rax;" \
+                          "mov $1, %rdi;" \
+                          "syscall;" );
+
 #define exit() __asm__("mov $0x3c, %rax;" \
-                       "xor %rdi, %rdi;"  \
+                       "mov $0, %rdi;"  \
                        "syscall;");
 #endif /* ARCH */
 

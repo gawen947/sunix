@@ -1,5 +1,5 @@
-/* File: scat.c
-   Time-stamp: <2011-06-08 21:48:48 gawen>
+/* File: test.c
+   Time-stamp: <2010-11-24 00:23:06 gawen>
 
    Copyright (C) 2010 David Hauweele <david.hauweele@gmail.com>
 
@@ -18,33 +18,14 @@
 
 #include "tlibc.h"
 
-/* read one disk block */
-#define BUFFER_SIZE 4096
-
-/* display a specific file */
-static void show(char *filename)
+int main(int argc, const char *argv[])
 {
-  char buf[BUFFER_SIZE];
-  register int n = BUFFER_SIZE;
-  register int fd;
-
-  fd = open(filename, O_RDONLY, 0);
-
-  do {
-    n = read(fd, buf, BUFFER_SIZE);
-    write(STDOUT_FILENO, buf, n);
-    print("prout");
-  } while(n == BUFFER_SIZE);
-}
-
-int main(int argc, char **argv)
-{
-  return argc;
-
-  while(argc--) {
-    print("proutA");
-    show(argv[argc]);
-  }
-
-  exit(argc);
+  register int n = 255;
+  unsigned char *t = malloc(256);
+  while(n--)
+	  t[n] = n;
+  t[256] = '\0';
+  write(STDOUT_FILENO, t, 256);
+  free(t);
+  return 0;
 }
