@@ -283,10 +283,9 @@ void _start(unsigned int first_arg)
   ret = main(argc, argv);
   exit(ret);
 #else
-
   __asm__("xor %ebp, %ebp;"       \
           "mov (%rsp), %rdi;"     \
-          "mov 8(%rsp), %rsi;"    \
+          "lea 8(%rsp), %rsi;"    \
           "call main;"            \
           "mov %rax, %rdi;"       \
           "mov $60, %rax;"        \

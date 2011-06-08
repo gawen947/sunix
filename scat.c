@@ -29,22 +29,20 @@ static void show(char *filename)
   register int fd;
 
   fd = open(filename, O_RDONLY, 0);
+  if(fd < 0)
+    error(1, "Cannot open file");
 
   do {
     n = read(fd, buf, BUFFER_SIZE);
     write(STDOUT_FILENO, buf, n);
-    print("prout");
   } while(n == BUFFER_SIZE);
 }
 
 int main(int argc, char **argv)
 {
-  return argc;
+  argc--;
+  while(argc > 0)
+    show(argv[argc--]);
 
-  while(argc--) {
-    print("proutA");
-    show(argv[argc]);
-  }
-
-  exit(argc);
+  exit(0);
 }
