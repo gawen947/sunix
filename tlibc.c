@@ -22,7 +22,7 @@
 
 int errno;
 
-void * calloc(size_t nmemb, size_t lsize)
+static void * calloc(size_t nmemb, size_t lsize)
 {
   void *mem;
   size_t size = lsize * nmemb;
@@ -38,7 +38,7 @@ void * calloc(size_t nmemb, size_t lsize)
   return mem;
 }
 
-void * realloc(void *ptr, size_t size)
+static void * realloc(void *ptr, size_t size)
 {
   void *n_ptr = NULL;
 
@@ -59,13 +59,13 @@ void * realloc(void *ptr, size_t size)
   return n_ptr;
 }
 
-void free(void *ptr)
+static void free(void *ptr)
 {
   ptr -= sizeof(size_t);
   munmap(ptr, *(size_t *)ptr + sizeof(size_t));
 }
 
-void * malloc(size_t size)
+static void * malloc(size_t size)
 {
   void *mem;
 
@@ -82,7 +82,7 @@ void * malloc(size_t size)
   return(mem + sizeof(size_t));
 }
 
-void * memset(void *s, int c, size_t n)
+static void * memset(void *s, int c, size_t n)
 {
   register char *p = s;
   while(n--)
@@ -90,7 +90,7 @@ void * memset(void *s, int c, size_t n)
   return s;
 }
 
-void * memcpy(void *dst, const void *src, size_t n)
+static void * memcpy(void *dst, const void *src, size_t n)
 {
   register char *rdst = dst;
   register const char *rsrc = src;
@@ -100,14 +100,14 @@ void * memcpy(void *dst, const void *src, size_t n)
   return rdst;
 }
 
-char * strcpy(char *dst, const char *src)
+static char * strcpy(char *dst, const char *src)
 {
   register char *s = dst;
   while((*s++ = *src++) != 0);
   return dst;
 }
 
-size_t strlen(const char *s)
+static size_t strlen(const char *s)
 {
   register const char *p;
 
@@ -115,7 +115,7 @@ size_t strlen(const char *s)
   return p - s;
 }
 
-int strcmp(const char *s1, const char *s2)
+static int strcmp(const char *s1, const char *s2)
 {
   for(; *s1 == *s2 ; ++s1, ++s2)
     if(*s1 == '\0')
@@ -123,7 +123,7 @@ int strcmp(const char *s1, const char *s2)
   return *(const unsigned char *)s1 - *(const unsigned char *)s2;
 }
 
-char * strcat(char *dst, const char *src)
+static char * strcat(char *dst, const char *src)
 {
   register char *s = dst;
   while(*s++);
@@ -232,27 +232,28 @@ DONE:
   }
 }
 
-unsigned long strtoul(const char *str, char **endptr, int base)
+static unsigned long strtoul(const char *str, char **endptr, int base)
 {
   return strto_l(str, endptr, base, 1);
 }
 
-long strtol(const char *str, char **endptr, int base)
+static long strtol(const char *str, char **endptr, int base)
 {
   return strto_l(str, endptr, base, 0);
 }
 
-int atoi(const char *str)
+static int atoi(const char *str)
 {
   return ((int)strto_l((str), (char **)NULL, 10, 0));
 }
 
-long atol(const char *str)
+static long atol(const char *str)
 {
   return (strto_l((str), (char **)NULL, 10, 0));
 }
 
-void *mmap(void *addr, size_t len, int prot, int flags, int fd, off_t offset)
+static void *tlibc_mmap(void *addr, size_t len, int prot, int flags, int fd, 
+                        off_t offset)
 {
   struct mmap_arg_struct {
     unsigned long addr;

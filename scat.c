@@ -17,6 +17,7 @@
    along with this program. If not, see <http://www.gnu.org/licenses/>. */
 
 #include "tlibc.h"
+#include "tlibc.c"
 
 /* same value as original cat command */
 #define BUFFER_SIZE 32768

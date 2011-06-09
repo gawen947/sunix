@@ -6,7 +6,7 @@ CFLAGS=-std=c99 -fomit-frame-pointer -O2 -ggdb
 PREF=/usr/local/
 BIN=$(PREF)bin/
 
-TLIBC_SRC := tlibc.c tlibc.h
+TLIBC_SRC := tlibc.h
 SUBARCH   := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
 		                  -e s/arm.*/arm/ -e s/sa110/arm/ \
 				       -e s/s390x/s390/ -e s/parisc64/parisc/ \
