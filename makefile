@@ -1,8 +1,8 @@
 CC=colorgcc
 RM=rm -f
 INSTALL=install
-FREE_CFLAGS=-std=c99 -s -nostdlib -fomit-frame-pointer -O2 -ggdb
-CFLAGS=-std=c99 -fomit-frame-pointer -O2 -ggdb
+FREE_CFLAGS=-std=c99 -s -nostdlib -fomit-frame-pointer -O2
+CFLAGS=-std=c99 -fomit-frame-pointer -O2
 PREF=/usr/local/
 BIN=$(PREF)bin/
 
