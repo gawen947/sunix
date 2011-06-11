@@ -41,7 +41,7 @@ static unsigned long strtoul(const char *str, char **endptr, int base);
 static long strtol(const char *str, char **endptr, int base);
 static int atoi(const char *str);
 static long atol(const char *str);
-static void usleep(long usec);
+static void usleep(unsigned long long usec);
 static void *tlibc_mmap(void *addr, size_t len, int prot, int flags, int fd,
                         off_t offset);
 
@@ -306,7 +306,7 @@ static void *tlibc_mmap(void *addr, size_t len, int prot, int flags, int fd,
 #endif
 }
 
-static void usleep(long usec)
+static void usleep(unsigned long long usec)
 {
   struct timespec ts = {
     .tv_sec  = (long int)(usec / 1000000),
