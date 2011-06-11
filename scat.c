@@ -1,5 +1,5 @@
 /* File: scat.c
-   Time-stamp: <2011-06-11 02:39:16 gawen>
+   Time-stamp: <2011-06-11 05:30:34 gawen>
 
    Copyright (C) 2010 David Hauweele <david.hauweele@gmail.com>
 
@@ -46,6 +46,8 @@ static void show(char *filename)
 
 int main(int argc, char **argv)
 {
+  int i;
+
   /* no arguments means we read from stdin */
   if(argc == 1) {
     char buf[BUFFER_SIZE];
@@ -54,25 +56,24 @@ int main(int argc, char **argv)
     do {
       n = read(STDIN_FILENO, buf, BUFFER_SIZE);
       write(STDOUT_FILENO, buf, n);
-    } while(n > 0);
+    } while(n == BUFFER_SIZE);
 
     goto CLEAN;
   }
 
-  argc--;
-  while(argc > 0) {
-    /* anything that begins with '-' is an argument for real cat */
-    if(*argv[argc] == '-')
+  /* anything that begins with '-' is an argument for real cat */
+  for(i = 1 ; i < argc ; i++)
+    if(*argv[i] == '-')
       execve("/bin/cat.real", argv, environ);
 
-    /* show this file */
-    show(argv[argc--]);
-  }
+  /* clean and simple cat so we may use our code */
+  for(i = 1 ; i < argc ; i++)
+    show(argv[i]);
 
 CLEAN:
   /* flush the buffers */
-  close(STDIN_FILENO);
   close(STDOUT_FILENO);
+  close(STDERR_FILENO);
 
   return 0;
 }
