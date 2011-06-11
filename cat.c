@@ -1,5 +1,5 @@
 /* File: scat.c
-   Time-stamp: <2011-06-11 05:30:34 gawen>
+   Time-stamp: <2011-06-11 15:30:39 gawen>
 
    Copyright (C) 2010 David Hauweele <david.hauweele@gmail.com>
 
@@ -23,7 +23,7 @@
 #define BUFFER_SIZE 32768
 
 /* path for real cat */
-#define REAL_CAT    "/bin/cat.real"
+#define CAT_WRAPPER "/bin/cat.real"
 
 /* display a specific file */
 static void show(char *filename)
@@ -39,7 +39,7 @@ static void show(char *filename)
   do {
     n = read(fd, buf, BUFFER_SIZE);
     write(STDOUT_FILENO, buf, n);
-  } while(n == BUFFER_SIZE);
+  } while(n > 0);
 
   close(fd);
 }
@@ -56,7 +56,7 @@ int main(int argc, char **argv)
     do {
       n = read(STDIN_FILENO, buf, BUFFER_SIZE);
       write(STDOUT_FILENO, buf, n);
-    } while(n == BUFFER_SIZE);
+    } while(n > 0);
 
     goto CLEAN;
   }
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
   /* anything that begins with '-' is an argument for real cat */
   for(i = 1 ; i < argc ; i++)
     if(*argv[i] == '-')
-      execve("/bin/cat.real", argv, environ);
+      execve(CAT_WRAPPER, argv, environ);
 
   /* clean and simple cat so we may use our code */
   for(i = 1 ; i < argc ; i++)

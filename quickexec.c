@@ -1,5 +1,5 @@
 /* File: quickexec.c
-   Time-stamp: <2011-04-25 01:48:00 gawen>
+   Time-stamp: <2011-06-11 15:22:47 gawen>
 
    Copyright (C) 2010 David Hauweele <david.hauweele@gmail.com>
 
@@ -23,6 +23,7 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <limits.h>
+#include <err.h>
 
 /* MAX_ARGUMENTS means the maximum number of arguments
    where L_ARG_MAX and M_ARG_MAX means the maximum length
