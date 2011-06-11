@@ -1,5 +1,5 @@
 /* File: sleep.c
-   Time-stamp: <2011-06-12 01:40:19 gawen>
+   Time-stamp: <2011-06-12 01:49:22 gawen>
 
    Copyright (C) 2011 David Hauweele <david@hauweele.net>
 
@@ -60,6 +60,12 @@ int main(int argc, char **argv)
   case('d'):
     multiplier = 86400000000ULL;
     break;
+  case('w'):
+    multiplier = 604800000000ULL;
+    break;
+  case('y'):
+    multiplier = 31536000000000ULL;
+    break;
   case('u'):
     multiplier = 1;
     break;
@@ -71,7 +77,7 @@ int main(int argc, char **argv)
     break;
   }
 
-  if(delay * multiplier <= delay)
+  if(delay >= (unsigned long long)-1 / multiplier)
     error(1, "time value too large");
 
   usleep(delay * multiplier);
