@@ -1,5 +1,5 @@
 /* File: tlibc.c
-   Time-stamp: <2011-06-11 19:57:24 gawen>
+   Time-stamp: <2011-06-12 01:06:49 gawen>
 
    Copyright (C) 2010 David Hauweele <david.hauweele@gmail.com>
 
@@ -15,6 +15,9 @@
 
    You should have received a copy of the GNU General Public License
    along with this program. If not, see <http://www.gnu.org/licenses/>. */
+
+#define __need_timespec
+#include <time.h>
 
 #include "tlibc.h"
 
@@ -38,6 +41,7 @@ static unsigned long strtoul(const char *str, char **endptr, int base);
 static long strtol(const char *str, char **endptr, int base);
 static int atoi(const char *str);
 static long atol(const char *str);
+static void usleep(long usec);
 static void *tlibc_mmap(void *addr, size_t len, int prot, int flags, int fd,
                         off_t offset);
 
@@ -228,21 +232,21 @@ static unsigned long strto_l(const char *str, char **endptr, int base, int uflag
 
     if(digit >= base)
       break;
-  }
 
-  ++pos;
-  fail_char = pos;
+    pos++;
+    fail_char = pos;
 
-  /* adjust number, with overflow check */
-  if((number > cutoff)
-     || ((number == cutoff) && (digit > cutoff_digit))) {
-    number = ULONG_MAX;
-    if(uflag)
-      negative = 0;
-    errno = ERANGE;
+    /* adjust number, with overflow check */
+    if((number > cutoff)
+       || ((number == cutoff) && (digit > cutoff_digit))) {
+      number = ULONG_MAX;
+      if(uflag)
+        negative = 0;
+      errno = ERANGE;
+    }
+    else
+      number = number * base + digit;
   }
-  else
-    number = number * base + digit;
 
 DONE:
   if(endptr)
@@ -299,7 +303,17 @@ static void *tlibc_mmap(void *addr, size_t len, int prot, int flags, int fd,
   return (void *)syscall(__NR_mmap, &a);
 #else /* __x86_64__ */
   return (void *)syscall(__NR_mmap, addr, len, prot, flags, fd, offset);
-#endif                          
+#endif
+}
+
+static void usleep(long usec)
+{
+  struct timespec ts = {
+    .tv_sec  = (long int)(usec / 1000000),
+    .tv_nsec = (long int)(usec % 1000000) * 1000ul
+  };
+
+  nanosleep(&ts, NULL);
 }
 
 /* main function wrapper */

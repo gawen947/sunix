@@ -21,7 +21,7 @@ ifeq ($(ARCH),x86_64)
         TLIBC_SRC += _x86_64_syscall.S _x86_64_syscall.c
 endif
 
-all: true false quickexec autorestart uptime-ng cat echo basename strip
+all: true false quickexec autorestart uptime-ng cat echo basename sleep strip
 
 true: true.c common.h
 	@echo -n COMPILING
@@ -55,11 +55,15 @@ basename: basename.c $(TLIBC_SRC)
 	@echo -n COMPILING
 	@$(CC) $(FREE_CFLAGS) $^ -o $@
 	@echo ... done.
+sleep: sleep.c $(TLIBC_SRC)
+	@echo -n COMPILING
+	@$(CC) $(FREE_CFLAGS) $^ -o $@
+	@echo ... done.
 
 .PHONY : clean install
 
 clean:
-	$(RM) true false quickexec autorestart uptime-ng cat echo basename
+	$(RM) true false quickexec autorestart uptime-ng cat echo basename sleep
 
 strip:
 	@echo -n STRIPING
@@ -67,6 +71,7 @@ strip:
 	@strip false
 	@strip cat
 	@strip echo
+	@strip sleep
 	@strip basename
 	@strip quickexec
 	@strip autorestart
@@ -80,6 +85,7 @@ core-install: all
 	$(INSTALL) cat /bin
 	$(INSTALL) echo /bin
 	$(INSTALL) basename /usr/bin
+	$(INSTALL) sleep /bin/sleep
 
 install: all
 	$(INSTALL) quickexec $(BIN)
