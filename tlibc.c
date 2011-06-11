@@ -1,5 +1,5 @@
 /* File: tlibc.c
-   Time-stamp: <2011-06-09 00:16:31 gawen>
+   Time-stamp: <2011-06-11 02:28:06 gawen>
 
    Copyright (C) 2010 David Hauweele <david.hauweele@gmail.com>
 
@@ -21,6 +21,25 @@
 #define MAP_ANONYMOUS 0x20
 
 int errno;
+char **environ;
+
+static void * calloc(size_t nmemb, size_t lsize);
+static void * realloc(void *ptr, size_t size);
+static void free(void *ptr);
+static void * malloc(size_t size);
+static void * memset(void *s, int c, size_t n);
+static void * memcpy(void *dst, const void *src, size_t n);
+static char * strcpy(char *dst, const char *src);
+static size_t strlen(const char *s);
+static int strcmp(const char *s1, const char *s2);
+static char * strcat(char *dst, const char *src);
+static unsigned long strto_l(const char *str, char **endptr, int base, int uflag);
+static unsigned long strtoul(const char *str, char **endptr, int base);
+static long strtol(const char *str, char **endptr, int base);
+static int atoi(const char *str);
+static long atol(const char *str);
+static void *tlibc_mmap(void *addr, size_t len, int prot, int flags, int fd,
+                        off_t offset);
 
 static void * calloc(size_t nmemb, size_t lsize)
 {
@@ -252,7 +271,7 @@ static long atol(const char *str)
   return (strto_l((str), (char **)NULL, 10, 0));
 }
 
-static void *tlibc_mmap(void *addr, size_t len, int prot, int flags, int fd, 
+static void *tlibc_mmap(void *addr, size_t len, int prot, int flags, int fd,
                         off_t offset)
 {
   struct mmap_arg_struct {
@@ -284,12 +303,16 @@ void _start(unsigned int first_arg)
   ret = main(argc, argv);
   exit(ret);
 #else /* __x86_64__ */
-  __asm__("mov (%rsp), %rdi;"     \
-          "lea 8(%rsp), %rsi;"    \
-          "call main;"            \
-          "mov %rax, %rdi;"       \
-          "mov $60, %rax;"        \
-          "syscall;"
-          );
+  __asm__("mov (%%rsp), %%rdi;"      \
+          "lea 8(%%rsp), %%rsi;"     \
+          "mov %%rdi, %%r10;"        \
+          "shl $3, %%r10;"           \
+          "add %%rsp, %%r10;"        \
+          "mov %%r10, %0;"           \
+          "call main;"               \
+          "mov %%rax, %%rdi;"        \
+          "mov $60, %%rax;"          \
+          "syscall;"                 \
+          :: "m"(environ));
 #endif
 }
