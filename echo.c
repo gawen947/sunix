@@ -1,5 +1,5 @@
 /* File: echo.c
-   Time-stamp: <2011-06-11 17:36:53 gawen>
+   Time-stamp: <2011-06-11 19:53:52 gawen>
 
    Copyright (C) 2011 David Hauweele <david@hauweele.net>
 
@@ -24,7 +24,7 @@
 #define STRING_SIZE 4096
 
 #define isxalpha(c) (c >= 'a' && c <= 'f')
-#define isXalpha(c) (c >= 'A' && c <= 'A')
+#define isXalpha(c) (c >= 'A' && c <= 'F')
 #define isodigit(c) (c >= '0' && c <= '7')
 
 /* TODO: support \0NNN \xHH */
@@ -163,14 +163,18 @@ int main(int argc, char **argv)
   }
 
   if(opt_bs) {
-    for(; i < argc - 1 ; i++)
+    for(; i < argc - 1 ; i++) {
       esc_write(argv[i]);
+      write(STDOUT_FILENO, " ", 1);
+    }
     if(i == argc - 1)
       esc_write(argv[i]);
   }
   else {
-    for(; i < argc - 1 ; i++)
+    for(; i < argc - 1 ; i++) {
       write(STDOUT_FILENO, argv[i], strlen(argv[i]));
+      write(STDOUT_FILENO, " ", 1);
+    }
     if(i == argc - 1)
       write(STDOUT_FILENO, argv[i], strlen(argv[i]));
   }

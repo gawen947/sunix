@@ -1,5 +1,5 @@
 /* File: tlibc.c
-   Time-stamp: <2011-06-11 02:28:06 gawen>
+   Time-stamp: <2011-06-11 19:57:24 gawen>
 
    Copyright (C) 2010 David Hauweele <david.hauweele@gmail.com>
 
@@ -40,6 +40,15 @@ static int atoi(const char *str);
 static long atol(const char *str);
 static void *tlibc_mmap(void *addr, size_t len, int prot, int flags, int fd,
                         off_t offset);
+
+static char * strndup(const char *s, size_t n);
+
+static char * strndup(const char *s, size_t n)
+{
+  void *ret = malloc(n);
+
+  return strcpy(ret, s);
+}
 
 static void * calloc(size_t nmemb, size_t lsize)
 {
@@ -93,12 +102,16 @@ static void * malloc(size_t size)
     return NULL;
   }
 
-  mem = (void *)mmap((void *)0, size + sizeof(size_t), PROT_READ | PROT_WRITE,
-                     MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  mem = (void *)tlibc_mmap((void *)0, size + sizeof(size_t),
+                      PROT_READ | PROT_WRITE,
+                      MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+
   if(mem == MAP_FAILED)
     return NULL;
+
   *(size_t *)mem = size;
-  return(mem + sizeof(size_t));
+
+  return (mem + sizeof(size_t));
 }
 
 static void * memset(void *s, int c, size_t n)
@@ -274,15 +287,19 @@ static long atol(const char *str)
 static void *tlibc_mmap(void *addr, size_t len, int prot, int flags, int fd,
                         off_t offset)
 {
+#ifdef __i386__
   struct mmap_arg_struct {
-    unsigned long addr;
-    unsigned long len;
-    unsigned long prot;
-    unsigned long flags;
-    unsigned long fd;
-    unsigned long offset;
+    unsigned int addr;
+    unsigned int len;
+    unsigned int prot;
+    unsigned int flags;
+    unsigned int fd;
+    unsigned int offset;
   } a = { (unsigned long)addr, len, prot, flags, fd, offset };
   return (void *)syscall(__NR_mmap, &a);
+#else /* __x86_64__ */
+  return (void *)syscall(__NR_mmap, addr, len, prot, flags, fd, offset);
+#endif                          
 }
 
 /* main function wrapper */

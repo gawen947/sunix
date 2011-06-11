@@ -21,7 +21,7 @@ ifeq ($(ARCH),x86_64)
         TLIBC_SRC += _x86_64_syscall.S _x86_64_syscall.c
 endif
 
-all: true false quickexec autorestart uptime-ng cat echo strip
+all: true false quickexec autorestart uptime-ng cat echo basename strip
 
 true: true.c common.h
 	@echo -n COMPILING
@@ -51,11 +51,15 @@ echo: echo.c $(TLIBC_SRC)
 	@echo -n COMPILING
 	@$(CC) $(FREE_CFLAGS) $^ -o $@
 	@echo ... done.
+basename: basename.c $(TLIBC_SRC)
+	@echo -n COMPILING
+	@$(CC) $(FREE_CFLAGS) $^ -o $@
+	@echo ... done.
 
 .PHONY : clean install
 
 clean:
-	$(RM) true false quickexec autorestart uptime-ng cat echo
+	$(RM) true false quickexec autorestart uptime-ng cat echo basename
 
 strip:
 	@echo -n STRIPING
@@ -63,19 +67,24 @@ strip:
 	@strip false
 	@strip cat
 	@strip echo
+	@strip basename
 	@strip quickexec
 	@strip autorestart
 	@strip uptime-ng
 	@echo ... done.
 
+core-install: all
+	@echo "Installing core files, hope you've backed up coreutils"
+	$(INSTALL) true /bin
+	$(INSTALL) false /bin
+	$(INSTALL) cat /bin
+	$(INSTALL) echo /bin
+	$(INSTALL) basename /usr/bin
+
 install: all
 	$(INSTALL) quickexec $(BIN)
 	$(INSTALL) autorestart $(BIN)
 	$(INSTALL) uptime-ng $(BIN)
-	#$(INSTALL) true $(BIN)
-	#$(INSTALL) false $($IN)
-	#$(INSTALL) cat $(BIN)
-	#$(INSTALL) echo $(BIN)
 	@echo "The following components should be installed manually"
 	@echo "since they may break base system."
 	@echo "  true, false, cat, echo"
