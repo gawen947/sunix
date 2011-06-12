@@ -88,7 +88,7 @@
                                 : "rax", "rdi", "rsi", "rdx");
 
 #define _exit_0() __asm__("mov $60, %rax;" \
-                          "mov $0, %di;" \
+                          "mov $0, %rdi;" \
                           "syscall;" );
 
 #define _exit_1() __asm__("mov $60, %rax;" \
