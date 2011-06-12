@@ -24,7 +24,7 @@ int main(int argc, char **argv)
   if(argc <= 1)
     error(1, "operand missing");
 
-  for(argc-- ; argc > 1 ; argc--) {
+  for(argc-- ; argc >= 1 ; argc--) {
     if(unlink(argv[argc]) != 0) {
       warning_nnl("cannot delete \"");
       write(STDERR_FILENO, argv[argc], strlen(argv[argc]));

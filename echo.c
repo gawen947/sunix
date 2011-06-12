@@ -21,7 +21,8 @@
 #include "tlibc.h"
 #include "tlibc.c"
 
-#define STRING_SIZE 4096
+/* default string size */
+#define STRING_SIZE 256
 
 #define isxalpha(c) (c >= 'a' && c <= 'f')
 #define isXalpha(c) (c >= 'A' && c <= 'F')
@@ -31,10 +32,22 @@
 inline static void esc_write(const char *s)
 {
   int i;
-  char str[STRING_SIZE];
+  size_t length = STRING_SIZE;
+  char *str = malloc(length);
+  if(!str)
+    error(1, "out of memory");
 
-  for(i = 0 ; i < STRING_SIZE && *s != '\0' ; i++, s++) {
+  for(i = 0 ; *s != '\0' ; i++, s++) {
     char val1, val2, val3;
+
+    /* reallocation */
+    if(i >= length) {
+      if(length > 1048576)
+        length += 1048576;
+      else
+        length <<= 1;
+      str = realloc(str, length);
+    }
 
     if(*s == '\\') {
       s++;
@@ -142,6 +155,8 @@ inline static void esc_write(const char *s)
   }
 
   write(STDOUT_FILENO, str, i);
+
+  free(str);
 }
 
 int main(int argc, char **argv)
