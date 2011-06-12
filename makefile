@@ -21,7 +21,7 @@ ifeq ($(ARCH),x86_64)
         TLIBC_SRC += _x86_64_syscall.S _x86_64_syscall.c
 endif
 
-all: true false quickexec autorestart uptime-ng cat echo basename sleep strip
+all: true false quickexec autorestart uptime-ng cat echo basename sleep unlink strip
 
 true: true.c common.h
 	@echo -n COMPILING
@@ -59,11 +59,15 @@ sleep: sleep.c $(TLIBC_SRC)
 	@echo -n COMPILING
 	@$(CC) $(FREE_CFLAGS) $^ -o $@
 	@echo ... done.
+unlink: unlink.c $(TLIBC_SRC)
+	@echo -n COMPILING
+	@$(CC) $(FREE_CFLAGS) $^ -o $@
+	@echo ... done.
 
 .PHONY : clean install
 
 clean:
-	$(RM) true false quickexec autorestart uptime-ng cat echo basename sleep
+	$(RM) true false quickexec autorestart uptime-ng cat echo basename sleep unlink
 
 strip:
 	@echo -n STRIPING
@@ -73,6 +77,7 @@ strip:
 	@strip echo
 	@strip sleep
 	@strip basename
+	@strip unlink
 	@strip quickexec
 	@strip autorestart
 	@strip uptime-ng
@@ -85,7 +90,8 @@ core-install: all
 	$(INSTALL) cat /bin
 	$(INSTALL) echo /bin
 	$(INSTALL) basename /usr/bin
-	$(INSTALL) sleep /bin/sleep
+	$(INSTALL) sleep /bin
+	$(INSTALL) unlink /usr/bin/unlink
 
 install: all
 	$(INSTALL) quickexec $(BIN)
@@ -93,4 +99,4 @@ install: all
 	$(INSTALL) uptime-ng $(BIN)
 	@echo "The following components should be installed manually"
 	@echo "since they may break base system."
-	@echo "  true, false, cat, echo"
+	@echo "  true, false, cat, echo, basename, sleep"
