@@ -1,5 +1,5 @@
 /* File: basename.c
-   Time-stamp: <2011-06-11 20:48:34 gawen>
+   Time-stamp: <2011-09-02 20:29:13 gawen>
 
    Copyright (C) 2011 David Hauweele <david@hauweele.net>
 
@@ -118,7 +118,7 @@ int main(int argc, char **argv)
   char *name;
 
   if(argc < 2)
-    error(1, "missing operand ");
+    error(1, "missing operand");
 
   name = base_name(argv[1]);
   strip_trailing_slashes(name);

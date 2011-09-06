@@ -21,7 +21,7 @@ ifeq ($(ARCH),x86_64)
         TLIBC_SRC += _x86_64_syscall.S _x86_64_syscall.c
 endif
 
-all: true false quickexec autorestart uptime-ng cat echo basename sleep unlink yes strip
+all: true false quickexec autorestart uptime-ng cat echo basename sleep unlink yes link strip
 
 true: true.c common.h
 	@echo -n COMPILING
@@ -64,6 +64,10 @@ unlink: unlink.c $(TLIBC_SRC)
 	@$(CC) $(FREE_CFLAGS) $^ -o $@
 	@echo ... done.
 yes: yes.c $(TLIBC_SRC)
+	@echo -n COMPILING
+	@$(CC) $(FREE_CFLAGS) $^ -o $@
+	@echo ... done.
+link: link.c $(TLIBC_SRC)
 	@echo -n COMPILING
 	@$(CC) $(FREE_CFLAGS) $^ -o $@
 	@echo ... done.

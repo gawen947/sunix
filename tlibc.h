@@ -1,5 +1,5 @@
 /* File: tlibc.h
-   Time-stamp: <2011-06-11 15:23:59 gawen>
+   Time-stamp: <2011-09-02 20:37:06 gawen>
 
    Copyright (C) 2010 David Hauweele <david.hauweele@gmail.com>
 
@@ -48,6 +48,7 @@ long syscall(long syscall_number, ...);
 #define execve(filename, argv, envp) syscall(__NR_execve, filename, argv, envp)
 #define nanosleep(rqtp, rmtp) syscall(__NR_nanosleep, rqtp, rmtp)
 #define unlink(path) syscall(__NR_unlink, path)
+#define link(old, new) syscall(__NR_link, old, new)
 
 #define print(s) write(STDOUT_FILENO, s "\n", sizeof(s))
 #define warning(s) write(STDERR_FILENO, "warning: " s "\n", sizeof("warning: " s "\n"))
