@@ -1,5 +1,5 @@
 /* File: tlibc.c
-   Time-stamp: <2011-06-12 01:06:49 gawen>
+   Time-stamp: <2011-09-08 01:45:09 gawen>
 
    Copyright (C) 2010 David Hauweele <david.hauweele@gmail.com>
 
@@ -49,7 +49,7 @@ static char * strndup(const char *s, size_t n);
 
 static char * strndup(const char *s, size_t n)
 {
-  void *ret = malloc(n);
+  register void *ret = malloc(n == 0 ? 1 : n);
 
   return strcpy(ret, s);
 }
@@ -148,6 +148,7 @@ static size_t strlen(const char *s)
   register const char *p;
 
   for(p = s ; *p; p++);
+
   return p - s;
 }
 

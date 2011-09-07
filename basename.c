@@ -1,5 +1,5 @@
 /* File: basename.c
-   Time-stamp: <2011-09-02 20:29:13 gawen>
+   Time-stamp: <2011-09-08 01:29:24 gawen>
 
    Copyright (C) 2011 David Hauweele <david@hauweele.net>
 
@@ -24,7 +24,6 @@
 static char * xstrndup(const char *s, size_t n)
 {
   register void *str = strndup(s, n);
-
   if(!str)
     error(1, "out of memory");
 
@@ -57,10 +56,10 @@ static size_t base_len (char const *name)
 {
   size_t len;
   size_t prefix_len = 0;
-
+  
   for (len = strlen(name);  1 < len && name[len - 1] == '/';  len--)
     continue;
-
+  
   return len;
 }
 
@@ -122,6 +121,7 @@ int main(int argc, char **argv)
 
   name = base_name(argv[1]);
   strip_trailing_slashes(name);
+
   if(argc >= 3 && name[0] != '/')
     remove_suffix(name, argv[2]);
 

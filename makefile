@@ -75,7 +75,7 @@ link: link.c $(TLIBC_SRC)
 .PHONY : clean install
 
 clean:
-	$(RM) true false quickexec autorestart uptime-ng cat echo basename sleep unlink yes
+	$(RM) true false quickexec autorestart uptime-ng cat echo basename sleep unlink yes link
 
 strip:
 	@echo -n STRIPING
@@ -85,6 +85,7 @@ strip:
 	@strip echo
 	@strip sleep
 	@strip basename
+	@strip link
 	@strip unlink
 	@strip yes
 	@strip quickexec
