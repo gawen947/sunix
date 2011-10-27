@@ -45,7 +45,7 @@ static void print_int(int x)
 
   s[20] = '\n';
   s[21] = '\0';
-  write(STDIN_FILENO, d, s - d + 21);
+  write(STDOUT_FILENO, d, s - d + 21);
 }
 
 int main(int argc, char **argv)
