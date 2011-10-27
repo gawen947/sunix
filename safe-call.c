@@ -101,6 +101,7 @@ SAFE_CALL3(chown, < 0, "IO chown error", int, const char *, uid_t, gid_t)
 SAFE_CALL3(socket, < 0, "socket creation error", int, int, int, int)
 SAFE_CALL3(bind, < 0, "bind error", int, const struct sockaddr *, socklen_t)
 SAFE_CALL3(recv, < 0, "recv error", ssize_t, void *, size_t, int)
+SAFE_CALL3(sem_init, < 0, "cannot initialize semaphore", int, sem_t *, int, unsigned int)
 SAFE_CALL3(accept, < 0, "accept error", int, int, struct sockaddr *,
            socklen_t *)
 
