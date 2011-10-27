@@ -21,61 +21,41 @@ ifeq ($(ARCH),x86_64)
         TLIBC_SRC += _x86_64_syscall.S _x86_64_syscall.c
 endif
 
-all: true false quickexec autorestart uptime-ng cat echo basename sleep unlink yes link strip
+all: true false quickexec autorestart uptime-ng cat echo basename sleep unlink \
+		 yes link args-length strip 
 
 true: true.c common.h
-	@echo -n COMPILING
-	@$(CC) $(FREE_CFLAGS) $^ -o $@
-	@echo ... done.
+	$(CC) $(FREE_CFLAGS) $^ -o $@
 false: false.c common.h
-	@echo -n COMPILING
-	@$(CC) $(FREE_CFLAGS) $^ -o $@
-	@echo ... done.
+	$(CC) $(FREE_CFLAGS) $^ -o $@
 autorestart: autorestart.c
-	@echo -n COMPILING
-	@$(CC) $(CFLAGS) $^ -o $@
-	@echo ... done.
+	$(CC) $(CFLAGS) $^ -o $@
 quickexec: quickexec.c
-	@echo -n COMPILING
-	@$(CC) $(CFLAGS) $^ -o $@
-	@echo ... done.
+	$(CC) $(CFLAGS) $^ -o $@
 uptime-ng: uptime-ng.c
-	@echo -n COMPILING
-	@$(CC) $(CFLAGS) $^ -o $@
-	@echo ... done.
+	$(CC) $(CFLAGS) $^ -o $@
 cat: cat.c $(TLIBC_SRC)
-	@echo -n COMPILING
-	@$(CC) $(FREE_CFLAGS) $^ -o $@
-	@echo ... done.
+	$(CC) $(FREE_CFLAGS) $^ -o $@
 echo: echo.c $(TLIBC_SRC)
-	@echo -n COMPILING
-	@$(CC) $(FREE_CFLAGS) $^ -o $@
-	@echo ... done.
+	$(CC) $(FREE_CFLAGS) $^ -o $@
 basename: basename.c $(TLIBC_SRC)
-	@echo -n COMPILING
-	@$(CC) $(FREE_CFLAGS) $^ -o $@
-	@echo ... done.
+	$(CC) $(FREE_CFLAGS) $^ -o $@
 sleep: sleep.c $(TLIBC_SRC)
-	@echo -n COMPILING
-	@$(CC) $(FREE_CFLAGS) $^ -o $@
-	@echo ... done.
+	$(CC) $(FREE_CFLAGS) $^ -o $@
 unlink: unlink.c $(TLIBC_SRC)
-	@echo -n COMPILING
-	@$(CC) $(FREE_CFLAGS) $^ -o $@
-	@echo ... done.
+	$(CC) $(FREE_CFLAGS) $^ -o $@
 yes: yes.c $(TLIBC_SRC)
-	@echo -n COMPILING
-	@$(CC) $(FREE_CFLAGS) $^ -o $@
-	@echo ... done.
+	$(CC) $(FREE_CFLAGS) $^ -o $@
 link: link.c $(TLIBC_SRC)
-	@echo -n COMPILING
-	@$(CC) $(FREE_CFLAGS) $^ -o $@
-	@echo ... done.
+	$(CC) $(FREE_CFLAGS) $^ -o $@
+args-length: args-length.c $(TLIBC_SRC)
+	$(CC) $(FREE_CFLAGS) $^ -o $@
 
 .PHONY : clean install
 
 clean:
-	$(RM) true false quickexec autorestart uptime-ng cat echo basename sleep unlink yes link
+	$(RM) true false quickexec autorestart uptime-ng cat echo basename sleep \
+				unlink yes args-length link
 
 strip:
 	@echo -n STRIPING
@@ -91,6 +71,7 @@ strip:
 	@strip quickexec
 	@strip autorestart
 	@strip uptime-ng
+	@strip args-length
 	@echo ... done.
 
 core-install: all
@@ -108,6 +89,7 @@ install: all
 	$(INSTALL) quickexec $(BIN)
 	$(INSTALL) autorestart $(BIN)
 	$(INSTALL) uptime-ng $(BIN)
+	$(INSTALL) args-length $(BIN)
 	@echo "The following components should be installed manually"
 	@echo "since they may break base system."
 	@echo "  true, false, cat, echo, basename, sleep, unlink, yes"
