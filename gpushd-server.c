@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2011-10-29 02:40:03 gawen>
+   Time-stamp: <2011-10-29 02:52:25 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -29,7 +29,6 @@
    SUCH DAMAGE. */
 
 #define _POSIX_SOURCE 1
-#define __USE_MISC 1
 
 #include <sys/types.h>
 #include <sys/socket.h>
