@@ -22,7 +22,7 @@ ifeq ($(ARCH),x86_64)
 endif
 
 all: true false quickexec autorestart uptime-ng cat echo basename sleep unlink \
-		 yes link args-length strip 
+		 yes link args-length gpushd-server strip 
 
 true: true.c common.h
 	$(CC) $(FREE_CFLAGS) $^ -o $@
@@ -50,12 +50,14 @@ link: link.c $(TLIBC_SRC)
 	$(CC) $(FREE_CFLAGS) $^ -o $@
 args-length: args-length.c $(TLIBC_SRC)
 	$(CC) $(FREE_CFLAGS) $^ -o $@
+gpushd-server: safe-call.c safe-call.h gpushd.h gpushd-server.c
+	$(CC) $(CFLAGS) -pthread $^ -o $@
 
 .PHONY : clean install
 
 clean:
 	$(RM) true false quickexec autorestart uptime-ng cat echo basename sleep \
-				unlink yes args-length link
+				unlink yes args-length gpushd-server link
 
 strip:
 	@echo -n STRIPING
@@ -72,6 +74,7 @@ strip:
 	@strip autorestart
 	@strip uptime-ng
 	@strip args-length
+	@strip gpushd-server
 	@echo ... done.
 
 core-install: all
@@ -90,6 +93,7 @@ install: all
 	$(INSTALL) autorestart $(BIN)
 	$(INSTALL) uptime-ng $(BIN)
 	$(INSTALL) args-length $(BIN)
+	$(INSTALL) gpushd-server $(BIN)
 	@echo "The following components should be installed manually"
 	@echo "since they may break base system."
 	@echo "  true, false, cat, echo, basename, sleep, unlink, yes"

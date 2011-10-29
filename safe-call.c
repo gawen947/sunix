@@ -88,9 +88,6 @@ SAFE_CALL2(stat, < 0, "IO stat error", int, const char *, struct stat *)
 SAFE_CALL2(dup2, < 0, "cannot duplicate file descriptors", int, int, int)
 SAFE_CALL2(getcwd, == NULL, "cannot get current working directory", char *,
            char *, size_t)
-SAFE_CALL2(skip, < 0, "cannot seek", int, int, off_t)
-SAFE_CALL2(readlink_malloc_n, == NULL, "IO readlink error", char *,
-           const char *, ssize_t *)
 SAFE_CALL2(utime, < 0, "IO chattr error", int, const char *,
            const struct utimbuf *)
 SAFE_CALL2(listen, < 0, "listen error", int, int, int)
@@ -99,10 +96,10 @@ SAFE_CALL3(read, < 0, "IO read error", ssize_t, int, void *, size_t)
 SAFE_CALL3(write, <= 0, "IO write error", ssize_t, int, const void *, size_t)
 SAFE_CALL3(chown, < 0, "IO chown error", int, const char *, uid_t, gid_t)
 SAFE_CALL3(socket, < 0, "socket creation error", int, int, int, int)
-SAFE_CALL3(bind, < 0, "bind error", int, const struct sockaddr *, socklen_t)
-SAFE_CALL3(recv, < 0, "recv error", ssize_t, void *, size_t, int)
+SAFE_CALL3(bind, < 0, "bind error", int, int, const struct sockaddr *, socklen_t)
 SAFE_CALL3(sem_init, < 0, "cannot initialize semaphore", int, sem_t *, int, unsigned int)
 SAFE_CALL3(accept, < 0, "accept error", int, int, struct sockaddr *,
            socklen_t *)
 
-SAFE_CALL4(send, < 0, "send error", int, void *, size_t, int)
+SAFE_CALL4(send, < 0, "send error", ssize_t, int, const void *, size_t, int)
+SAFE_CALL4(recv, < 0, "recv error", ssize_t, int, void *, size_t, int)

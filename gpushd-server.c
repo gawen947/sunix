@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2011-10-29 01:23:01 gawen>
+   Time-stamp: <2011-10-29 02:40:03 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -28,6 +28,9 @@
    OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
    SUCH DAMAGE. */
 
+#define _POSIX_SOURCE 1
+#define __USE_MISC 1
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
@@ -45,8 +48,15 @@
 #include <signal.h>
 #include <err.h>
 
+#include "safe-call.h"
 #include "gpushd.h"
 
+#ifndef SUN_LEN
+# define SUN_LEN(ptr) ((size_t) (((struct sockaddr_un *) 0)->sun_path) \
+                       + strlen ((ptr)->sun_path))
+#endif /* SUN_LEN */
+
+#define UNIX_PATH_MAX   108 /* we don't really need to define this one */
 #define MAX_CONCURRENCY 16
 #define MAX_PATH        256
 #define MAX_STACK       65535
@@ -62,10 +72,12 @@ enum st_cli { ST_CMD,
               ST_INT,
               ST_PROCEED };
 
+static const char *sock_path;
+
 static struct thread_pool {
   sem_t available;
   unsigned int idx;
-  phtread_t threads[MAX_CONCURRENCY]; /* threads */
+  pthread_t threads[MAX_CONCURRENCY]; /* threads */
   int       fd_cli[MAX_CONCURRENCY];  /* client file descriptor */
   uint16_t  st_threads;               /* threads state */
 } pool;
@@ -82,19 +94,29 @@ static struct dir_stack {
 } stack;
 
 struct cli_state {
-  st_cli state;
+  enum st_cli state;
   int p_idx;
 
   struct request {
-    cmd_cli command;
+    enum cmd_cli command;
 
     char p_string[MAX_PATH];
     union integer {
       int     value;
       uint8_t bytes[sizeof(int)];
     } p_int;
-  } current_request;
+  } request;
 };
+
+static void exit_clean()
+{
+  unlink(sock_path);
+}
+
+static void signal_clean(int signum)
+{
+  exit_clean();
+}
 
 static void cli_timeout(int signum)
 {
@@ -119,7 +141,7 @@ static bool cmd_push(int cli, struct request *request)
 {
   struct d_node *new = xmalloc(sizeof(struct d_node));
 
-  strcpy(new.d_path, request->p_string);
+  strcpy(new->d_path, request->p_string);
 
   /* stack critical read-write section */
   sem_wait(&stack.mutex);
@@ -130,7 +152,8 @@ static bool cmd_push(int cli, struct request *request)
       free(new);
       return true;
     }
-    new.next   = stack.dirs;
+
+    new->next  = stack.dirs;
     stack.dirs = new;
     stack.size++;
   }
@@ -150,7 +173,7 @@ static bool cmd_pop(int cli, struct request *request)
   /* stack critical read-write section */
   sem_wait(&stack.mutex);
   {
-    for(i = 0 ; i < j ; i++, c = c.next) {
+    for(i = 0 ; i < j ; i++, c = c->next) {
       if(c == NULL) {
         sem_post(&stack.mutex); /* release early */
         send_error(cli, E_NFOUND);
@@ -165,9 +188,9 @@ static bool cmd_pop(int cli, struct request *request)
 
     /* free the node */
     if(!o)
-      stack.dirs = c.next;
+      stack.dirs = c->next;
     else
-      o.next = c.next;
+      o->next = c->next;
     stack.size--;
     free(c);
   }
@@ -192,7 +215,7 @@ static bool cmd_popf(int cli, struct request *request)
   /* stack critical read section */
   sem_wait(&stack.mutex);
   {
-    stack.dirs = c.next;
+    stack.dirs = c->next;
     result = *c;
     free(c);
   }
@@ -217,7 +240,7 @@ static bool cmd_clean(int cli, struct request *request)
     while(c != NULL) {
       struct d_node *o = c;
 
-      c = c.next;
+      c = c->next;
       free(o);
     }
 
@@ -230,7 +253,7 @@ static bool cmd_clean(int cli, struct request *request)
 
 static bool cmd_get(int cli, struct request *request)
 {
-  int i;
+  int i, j = request->p_int.value;
   struct d_node *c = stack.dirs;
   struct d_node result;
   char cmd = CMD_RESPS;
@@ -239,7 +262,7 @@ static bool cmd_get(int cli, struct request *request)
   /* stack critical read section */
   sem_wait(&stack.mutex);
   {
-    for(i = 0 ; i < j ; i++, c = c.next) {
+    for(i = 0 ; i < j ; i++, c = c->next) {
       if(c == NULL) {
         sem_post(&stack.mutex); /* release early */
         send_error(cli, E_NFOUND);
@@ -308,7 +331,7 @@ static bool cmd_getall(int cli, struct request *request)
   {
     /* we got no choice here but to send
        the message inside the critical section */
-    for(; c != NULL ; c = c.next)
+    for(; c != NULL ; c = c->next)
       write(cli, c->d_path, strlen(c->d_path));
   }
   sem_post(&stack.mutex);
@@ -439,14 +462,14 @@ static bool proceed_client(int cli, struct cli_state *state)
 
 static void * new_cli(void *arg)
 {
-  int idx = (int)arg;
+  int idx = (long)arg;
   struct cli_state cli = { .state = ST_CMD,
                            .p_idx = 0 };
   struct sigaction act = { .sa_handler = cli_timeout,
                            .sa_flags   = 0 };
 
   /* ensure this thread won't live more than REQUEST_TIMEOUT seconds */
-  sigfillset(&act.mask);
+  sigfillset(&act.sa_mask);
   sigaction(SIGALRM, &act, NULL);
 
   alarm(REQUEST_TIMEOUT);
@@ -463,7 +486,7 @@ static void * new_cli(void *arg)
 static void server(const char *sock_path)
 {
   int sd;
-  struct sockaddr_un s_addr = {0};
+  struct sockaddr_un s_addr = { .sun_family = AF_UNIX };
 
   /* socket creation */
   sd = xsocket(AF_UNIX, SOCK_STREAM, 0);
@@ -487,18 +510,33 @@ static void server(const char *sock_path)
     SET_BIT(i, pool.st_threads);
     pool.fd_cli[i] = fd;
 
-    if(pthread_create(&pool.threads[i], NULL, new_cli, (void *)i))
+    if(pthread_create(&pool.threads[i], NULL, new_cli, (void *)(long)i))
       err(EXIT_FAILURE, "cannot create thread");
 
     pool.idx = (pool.idx + 1) % MAX_CONCURRENCY;
   }
 }
 
-int main(int argc, char *argv[])
+int main(int argc, const char *argv[])
 {
+  struct sigaction act = { .sa_handler = signal_clean,
+                           .sa_flags   = 0 };
+
   if(argc != 2)
     errx(EXIT_FAILURE, "usage <socket-path>");
 
   xsem_init(&pool.available, 0, MAX_CONCURRENCY);
   xsem_init(&stack.mutex, 0, 1);
+
+  /* unlink socket on exit */
+  sigfillset(&act.sa_mask);
+  sigaction(SIGTERM, &act, NULL);
+  sigaction(SIGSTOP, &act, NULL);
+  sigaction(SIGINT, &act, NULL);
+
+  atexit(exit_clean);
+  sock_path = argv[1];
+  server(argv[1]);
+
+  return EXIT_SUCCESS;
 }
