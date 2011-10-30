@@ -1,5 +1,5 @@
 /* File: gpushd-client.c
-   Time-stamp: <2011-10-30 19:39:10 gawen>
+   Time-stamp: <2011-10-30 19:59:11 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -59,7 +59,6 @@
 
 static const char *prog_name;
 static const char *sock_path;
-static bool stay = false;
 static enum cmd current_request;
 static int getall_counter;
 
@@ -135,7 +134,6 @@ static void cmdline(int argc, char * const argv[], const char *cwd)
              OPT_GET    = 'g',
              OPT_GETALL = 'G',
              OPT_SIZE   = 's',
-             OPT_STAY   = 'S',
              OPT_SOCKET = 'f',
              OPT_HELP   = 'h' };
 
@@ -146,7 +144,6 @@ static void cmdline(int argc, char * const argv[], const char *cwd)
     { 'g', "get",     "Get a directory, without removing it" },
     { 'G', "get-all", "Get and print all directory from the stack" },
     { 's', "size",    "Get the stack size" },
-    { 'S', "stay",    "Do not change directory on get or pop" },
     { 'f', "socket",  "Socket path" },
     { 'h', "help",    "Show this help message" },
     { 0, NULL, NULL }
@@ -159,14 +156,13 @@ static void cmdline(int argc, char * const argv[], const char *cwd)
     { "get",     optional_argument, NULL, OPT_GET },
     { "get-all", no_argument, NULL, OPT_GETALL },
     { "size",    no_argument, NULL, OPT_SIZE },
-    { "stay",    no_argument, NULL, OPT_STAY },
     { "socket",  required_argument, NULL, OPT_SOCKET },
     { "help",    no_argument, NULL, OPT_HELP },
     { NULL, 0, NULL, 0 }
   };
 
   while(1) {
-    int c = getopt_long(argc, argv, "p:P:cg:GsSf:h", opts, NULL);
+    int c = getopt_long(argc, argv, "p::P::cg::Gsf:h", opts, NULL);
 
     if(c == -1)
       break;
@@ -198,9 +194,6 @@ static void cmdline(int argc, char * const argv[], const char *cwd)
       break;
     case(OPT_SIZE):
       add_request(CMD_SIZE, NULL, 0);
-      break;
-    case(OPT_STAY):
-      stay = true;
       break;
     case(OPT_SOCKET):
       sock_path = optarg;
@@ -268,9 +261,7 @@ static bool cmd_resps(int srv, struct message *response)
   case(CMD_POPF):
   case(CMD_GET):
   case(CMD_GETF):
-    printf("- %s\n", response->p_string);
-    if(!stay)
-      chdir(response->p_string);
+    printf("%s\n", response->p_string);
     break;
   case(CMD_GETALL):
     printf("%d - %s\n", getall_counter++, response->p_string);

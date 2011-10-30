@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2011-10-30 19:36:05 gawen>
+   Time-stamp: <2011-10-30 20:01:08 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -207,7 +207,7 @@ static bool cmd_clean(int cli, struct message *request)
       c = c->next;
       free(o);
     }
-
+    stack.dirs = NULL;
     stack.size = 0;
   }
   sem_post(&stack.mutex);
