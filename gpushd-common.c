@@ -95,7 +95,7 @@ bool parse(int remote, struct parse_state *state,
   int i = 0;
   char buf[IOSIZE];
 
-  ssize_t n = xread(remote, buf, IOSIZE);
+  ssize_t n = xrecv(remote, buf, IOSIZE, 0);
 
   if(!n) {
     warnx("remote disconnected");

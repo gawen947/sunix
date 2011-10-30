@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2011-10-30 14:25:32 gawen>
+   Time-stamp: <2011-10-30 16:27:43 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -390,7 +390,7 @@ static void server(const char *sock_path)
     /* wait for the first available thread */
     sem_wait(&pool.available);
 
-    for(i = pool.idx ; !CHECK_BIT(i, pool.st_threads) ;
+    for(i = pool.idx ; CHECK_BIT(i, pool.st_threads) ;
         i = (i + 1) % MAX_CONCURRENCY);
 
     /* setup client thread */
