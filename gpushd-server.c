@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2011-10-30 21:52:05 gawen>
+   Time-stamp: <2011-10-31 00:17:39 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -424,6 +424,10 @@ static void server(const char *sock_path)
 
     if(pthread_create(&pool.threads[i], NULL, new_cli, (void *)(long)i))
       err(EXIT_FAILURE, "cannot create thread");
+
+    /* disable multithread for now, since we need a way to free
+       those ressources when the thread stopped */
+    pthread_join(pool.threads[i], NULL);
 
     pool.idx = (pool.idx + 1) % MAX_CONCURRENCY;
   }
