@@ -96,7 +96,7 @@ bool parse(int remote, struct parse_state *state,
   char buf[IOSIZE];
 
   ssize_t n = xrecv(remote, buf, IOSIZE, 0);
-
+  
   if(!n) {
     warnx("remote disconnected");
     return false;
@@ -107,7 +107,7 @@ bool parse(int remote, struct parse_state *state,
       int j;
 
     case(ST_CMD):
-      state->p_idx           = 0;
+      state->p_idx       = 0;
       state->msg.command = buf[i++];
 
       switch(state->msg.command) {
@@ -128,7 +128,8 @@ bool parse(int remote, struct parse_state *state,
       case(CMD_POPF):
       case(CMD_CLEAN):
       case(CMD_GETALL):
-        state->state = ST_PROCEED;
+        if(!proceed(remote, &state->msg))
+          return false;
         break;
       default:
         send_error(remote, E_INVAL);
@@ -140,7 +141,8 @@ bool parse(int remote, struct parse_state *state,
       for(j = state->p_idx ; i != n ; j++, i++) {
         state->msg.p_string[j] = buf[i];
         if(buf[i] == '\0') {
-          state->state = ST_PROCEED;
+          if(!proceed(remote, &state->msg))
+            return false;
           break;
         }
         else if(j == MAX_PATH) {
@@ -158,21 +160,18 @@ bool parse(int remote, struct parse_state *state,
            about endianess */
         state->msg.p_int.bytes[j] = buf[i];
         if(j == sizeof(int)) {
-          state->state = ST_PROCEED;
+          if(!proceed(remote, &state->msg))
+            return false;
           break;
         }
       }
 
       state->p_idx = j;
       break;
-    case(ST_PROCEED):
-      if(!proceed(remote, &state->msg))
-        return false;
-      break;
     default:
       assert(false); /* unknown parsing state */
     }
-  } while(i != n);
+  } while(i < n);
 
   return true;
 }

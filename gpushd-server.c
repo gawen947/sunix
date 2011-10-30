@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2011-10-30 16:27:43 gawen>
+   Time-stamp: <2011-10-30 18:30:23 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -177,6 +177,12 @@ static bool cmd_popf(int cli, struct message *request)
   /* stack critical read section */
   sem_wait(&stack.mutex);
   {
+    if(!stack.dirs) {
+      sem_post(&stack.mutex);
+      send_error(cli, E_NFOUND);
+      return true;
+    }
+
     stack.dirs = c->next;
     result = *c;
     free(c);
@@ -254,6 +260,11 @@ static bool cmd_getf(int cli, struct message *request)
   /* stack critical read section */
   sem_wait(&stack.mutex);
   {
+    if(!stack.dirs) {
+      sem_post(&stack.mutex);
+      send_error(cli, E_NFOUND);
+      return true;
+    }
     result = *stack.dirs;
   }
   sem_post(&stack.mutex);
@@ -289,12 +300,12 @@ static bool cmd_getall(int cli, struct message *request)
   /* stack critical read section */
   sem_wait(&stack.mutex);
   {
-    write(cli, &cmd, sizeof(char));
-
     /* we got no choice here but to send
        the message inside the critical section */
-    for(; c != NULL ; c = c->next)
+    for(; c != NULL ; c = c->next) {
+      write(cli, &cmd, sizeof(char));
       write(cli, c->d_path, strlen(c->d_path));
+    }
   }
   sem_post(&stack.mutex);
 
@@ -311,6 +322,9 @@ static bool cmd_error(int cli, struct message *request)
 
 static bool proceed_request(int cli, struct message *request)
 {
+  bool result = false;
+  char end = CMD_END;
+
   switch(request->command) {
   case(CMD_QUIT):
     return false;
@@ -319,30 +333,42 @@ static bool proceed_request(int cli, struct message *request)
   case(CMD_RESPS):
     warnx("received invalid command %d from client", request->command);
     send_error(cli, E_PERM);
-    return true;
+    result = true;
+    break;
   case(CMD_ERROR):
-    return cmd_error(cli, request);
+    result = cmd_error(cli, request);
+    break;
   case(CMD_PUSH):
-    return cmd_push(cli, request);
+    result = cmd_push(cli, request);
+    break;
   case(CMD_POP):
-    return cmd_pop(cli, request);
+    result = cmd_pop(cli, request);
+    break;
   case(CMD_POPF):
-    return cmd_popf(cli, request);
+    result = cmd_popf(cli, request);
+    break;
   case(CMD_CLEAN):
-    return cmd_clean(cli, request);
+    result = cmd_clean(cli, request);
+    break;
   case(CMD_GET):
-    return cmd_get(cli, request);
+    result = cmd_get(cli, request);
+    break;
   case(CMD_GETF):
-    return cmd_getf(cli, request);
+    result = cmd_getf(cli, request);
+    break;
   case(CMD_GETALL):
-    return cmd_getall(cli, request);
+    result = cmd_getall(cli, request);
+    break;
   case(CMD_SIZE):
-    return cmd_size(cli, request);
+    result = cmd_size(cli, request);
+    break;
   default:
     assert(false); /* unknown command */
   }
 
-  return false;
+  write(cli, &end, sizeof(char));
+
+  return result;
 }
 
 static void * new_cli(void *arg)
@@ -366,6 +392,8 @@ static void * new_cli(void *arg)
   /* free the thread slot */
   CLEAR_BIT(idx, pool.st_threads);
   sem_post(&pool.available);
+
+  alarm(0);
 
   return NULL;
 }
