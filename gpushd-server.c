@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2011-10-30 11:41:57 gawen>
+   Time-stamp: <2011-10-30 14:25:32 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -47,29 +47,17 @@
 #include <signal.h>
 #include <err.h>
 
+#include "gpushd-common.h"
 #include "safe-call.h"
 #include "gpushd.h"
 
-#ifndef SUN_LEN
-# define SUN_LEN(ptr) ((size_t) (((struct sockaddr_un *) 0)->sun_path) \
-                       + strlen ((ptr)->sun_path))
-#endif /* SUN_LEN */
-
-#define UNIX_PATH_MAX   108 /* we don't really need to define this one */
 #define MAX_CONCURRENCY 16
-#define MAX_PATH        256
 #define MAX_STACK       65535
-#define IOSIZE          256
 #define REQUEST_TIMEOUT 1
 
 #define CHECK_BIT(bit, flag) ((flag) & (1 << (bit)))
 #define SET_BIT(bit, flag) ((flag) |= (1 << (bit)))
 #define CLEAR_BIT(bit, flag) ((flag) |= ~(1 << (bit)))
-
-enum st_cli { ST_CMD,
-              ST_STR,
-              ST_INT,
-              ST_PROCEED };
 
 static const char *sock_path;
 
@@ -92,21 +80,6 @@ static struct dir_stack {
   } *dirs;
 } stack;
 
-struct cli_state {
-  enum st_cli state;
-  int p_idx;
-
-  struct request {
-    enum cmd_cli command;
-
-    char p_string[MAX_PATH];
-    union integer {
-      int     value;
-      uint8_t bytes[sizeof(int)];
-    } p_int;
-  } request;
-};
-
 static void exit_clean()
 {
   unlink(sock_path);
@@ -126,17 +99,7 @@ static void cli_timeout(int signum)
   pthread_exit(NULL);
 }
 
-static void send_error(int cli, int code)
-{
-  struct {
-    char cmd;
-    int code;
-  } message = { CMD_ERROR, code };
-
-  write(cli, &message, sizeof(message));
-}
-
-static bool cmd_push(int cli, struct request *request)
+static bool cmd_push(int cli, struct message *request)
 {
   struct d_node *new = xmalloc(sizeof(struct d_node));
 
@@ -161,7 +124,7 @@ static bool cmd_push(int cli, struct request *request)
   return true;
 }
 
-static bool cmd_pop(int cli, struct request *request)
+static bool cmd_pop(int cli, struct message *request)
 {
   struct d_node result;
   struct d_node *c = stack.dirs, *o = NULL;
@@ -204,7 +167,7 @@ static bool cmd_pop(int cli, struct request *request)
   return true;
 }
 
-static bool cmd_popf(int cli, struct request *request)
+static bool cmd_popf(int cli, struct message *request)
 {
   struct d_node *c = stack.dirs;
   struct d_node result;
@@ -229,7 +192,7 @@ static bool cmd_popf(int cli, struct request *request)
   return true;
 }
 
-static bool cmd_clean(int cli, struct request *request)
+static bool cmd_clean(int cli, struct message *request)
 {
   struct d_node *c = stack.dirs;
 
@@ -250,7 +213,7 @@ static bool cmd_clean(int cli, struct request *request)
   return true;
 }
 
-static bool cmd_get(int cli, struct request *request)
+static bool cmd_get(int cli, struct message *request)
 {
   int i, j = request->p_int.value;
   struct d_node *c = stack.dirs;
@@ -282,7 +245,7 @@ static bool cmd_get(int cli, struct request *request)
   return true;
 }
 
-static bool cmd_getf(int cli, struct request *request)
+static bool cmd_getf(int cli, struct message *request)
 {
   struct d_node result;
   char cmd = CMD_RESPS;
@@ -304,7 +267,7 @@ static bool cmd_getf(int cli, struct request *request)
   return true;
 }
 
-static bool cmd_size(int cli, struct request *request)
+static bool cmd_size(int cli, struct message *request)
 {
   size_t size;
 
@@ -318,7 +281,7 @@ static bool cmd_size(int cli, struct request *request)
   return true;
 }
 
-static bool cmd_getall(int cli, struct request *request)
+static bool cmd_getall(int cli, struct message *request)
 {
   struct d_node *c = stack.dirs;
   char cmd = CMD_RESPS;
@@ -338,14 +301,15 @@ static bool cmd_getall(int cli, struct request *request)
   return true;
 }
 
-static bool cmd_end(int cli, struct request *request)
+static bool cmd_error(int cli, struct message *request)
 {
-  char cmd = CMD_END;
+  warnx("received error from client %d with %s",
+        str_error(request->p_int.value));
 
-  write(cli, &cmd, sizeof(char));
+  return true;
 }
 
-static bool proceed_request(int cli, struct request *request)
+static bool proceed_request(int cli, struct message *request)
 {
   switch(request->command) {
   case(CMD_QUIT):
@@ -353,10 +317,11 @@ static bool proceed_request(int cli, struct request *request)
   case(CMD_END):
   case(CMD_RESPI):
   case(CMD_RESPS):
-  case(CMD_ERROR):
     warnx("received invalid command %d from client", request->command);
     send_error(cli, E_PERM);
     return true;
+  case(CMD_ERROR):
+    return cmd_error(cli, request);
   case(CMD_PUSH):
     return cmd_push(cli, request);
   case(CMD_POP):
@@ -380,100 +345,13 @@ static bool proceed_request(int cli, struct request *request)
   return false;
 }
 
-static bool proceed_client(int cli, struct cli_state *state)
-{
-  int i = 0;
-  char buf[IOSIZE];
-
-  ssize_t n = xread(cli, buf, IOSIZE);
-
-  if(!n) {
-    warnx("client disconnected");
-    return false;
-  }
-
-  do {
-    switch(state->state) {
-      int j;
-
-    case(ST_CMD):
-      state->p_idx           = 0;
-      state->request.command = buf[i++];
-
-      switch(state->request.command) {
-      case(CMD_PUSH):
-      case(CMD_RESPS):
-        state->state = ST_STR;
-        break;
-      case(CMD_POP):
-      case(CMD_GET):
-      case(CMD_RESPI):
-      case(CMD_ERROR):
-        state->state = ST_INT;
-        break;
-      case(CMD_END):
-      case(CMD_QUIT):
-      case(CMD_SIZE):
-      case(CMD_GETF):
-      case(CMD_POPF):
-      case(CMD_CLEAN):
-      case(CMD_GETALL):
-        state->state = ST_PROCEED;
-        break;
-      default:
-        send_error(cli, E_INVAL);
-        return false;
-      }
-
-      break;
-    case(ST_STR):
-      for(j = state->p_idx ; i != n ; j++, i++) {
-        state->request.p_string[j] = buf[i];
-        if(buf[i] == '\0') {
-          state->state = ST_PROCEED;
-          break;
-        }
-        else if(j == MAX_PATH) {
-          send_error(cli, E_LONG);
-          return false;
-        }
-      }
-
-      state->p_idx = j;
-      break;
-    case(ST_INT):
-      for(j = state->p_idx ; i != n ; j++, i++) {
-        /* since we use unix domain sockets we stick
-           to the same architecture and don't bother
-           about endianess */
-        state->request.p_int.bytes[j] = buf[i];
-        if(j == sizeof(int)) {
-          state->state = ST_PROCEED;
-          break;
-        }
-      }
-
-      state->p_idx = j;
-      break;
-    case(ST_PROCEED):
-      if(!proceed_request(cli, &state->request))
-        return false;
-      break;
-    default:
-      assert(false); /* unknown parsing state */
-    }
-  } while(i != n);
-
-  return true;
-}
-
 static void * new_cli(void *arg)
 {
   int idx = (long)arg;
-  struct cli_state cli = { .state = ST_CMD,
-                           .p_idx = 0 };
-  struct sigaction act = { .sa_handler = cli_timeout,
-                           .sa_flags   = 0 };
+  struct parse_state cli = { .state = ST_CMD,
+                             .p_idx = 0 };
+  struct sigaction act   = { .sa_handler = cli_timeout,
+                             .sa_flags   = 0 };
 
   /* ensure this thread won't live more than REQUEST_TIMEOUT seconds */
   sigfillset(&act.sa_mask);
@@ -481,7 +359,7 @@ static void * new_cli(void *arg)
 
   alarm(REQUEST_TIMEOUT);
 
-  while(proceed_client(pool.fd_cli[idx], &cli));
+  while(parse(pool.fd_cli[idx], &cli, proceed_request));
 
   close(pool.fd_cli[idx]);
 

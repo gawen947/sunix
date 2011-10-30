@@ -1,5 +1,5 @@
 /* File: gpushd-common.c
-   Time-stamp: <2011-10-30 11:58:00 gawen>
+   Time-stamp: <2011-10-30 14:26:27 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -51,12 +51,51 @@
 #include "gpushd.h"
 #include "gpushd-common.h"
 
-bool parse(int remote, struct parse_state *state)
+void send_error(int remote, int code)
+{
+  struct {
+    char cmd;
+    int code;
+  } message = { CMD_ERROR, code };
+
+  write(remote, &message, sizeof(message));
+}
+
+const char * str_error(int code)
+{
+  const char *s;
+
+  switch(code) {
+  case(E_PERM):
+    s = "Permission denied";
+    break;
+  case(E_INVAL):
+    s = "Invalid command";
+    break;
+  case(E_NFOUND):
+    s = "Not found";
+    break;
+  case(E_LONG):
+    s = "Too long";
+    break;
+  case(E_FULL):
+    s = "Stack full";
+    break;
+  default:
+    s = "Unknown error";
+    break;
+  }
+
+  return s;
+}
+
+bool parse(int remote, struct parse_state *state,
+           bool (*proceed)(int, struct message *))
 {
   int i = 0;
   char buf[IOSIZE];
 
-  ssize_t n = xread(srv, buf, IOSIZE);
+  ssize_t n = xread(remote, buf, IOSIZE);
 
   if(!n) {
     warnx("remote disconnected");
@@ -69,9 +108,9 @@ bool parse(int remote, struct parse_state *state)
 
     case(ST_CMD):
       state->p_idx           = 0;
-      state->request.command = buf[i++];
+      state->msg.command = buf[i++];
 
-      switch(state->request.command) {
+      switch(state->msg.command) {
       case(CMD_PUSH):
       case(CMD_RESPS):
         state->state = ST_STR;
@@ -99,7 +138,7 @@ bool parse(int remote, struct parse_state *state)
       break;
     case(ST_STR):
       for(j = state->p_idx ; i != n ; j++, i++) {
-        state->request.p_string[j] = buf[i];
+        state->msg.p_string[j] = buf[i];
         if(buf[i] == '\0') {
           state->state = ST_PROCEED;
           break;
@@ -117,7 +156,7 @@ bool parse(int remote, struct parse_state *state)
         /* since we use unix domain sockets we stick
            to the same architecture and don't bother
            about endianess */
-        state->request.p_int.bytes[j] = buf[i];
+        state->msg.p_int.bytes[j] = buf[i];
         if(j == sizeof(int)) {
           state->state = ST_PROCEED;
           break;
@@ -127,7 +166,7 @@ bool parse(int remote, struct parse_state *state)
       state->p_idx = j;
       break;
     case(ST_PROCEED):
-      if(!proceed_request(remote, &state->request))
+      if(!proceed(remote, &state->msg))
         return false;
       break;
     default:

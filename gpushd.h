@@ -1,5 +1,5 @@
 /* File: gpushd.h
-   Time-stamp: <2011-10-27 18:15:08 gawen>
+   Time-stamp: <2011-10-30 14:23:05 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -33,19 +33,19 @@
 
 #define MAX_PATH 256
 
-enum cmd_cli { CMD_QUIT,
-               CMD_END,
-               CMD_PUSH,
-               CMD_POP,
-               CMD_POPF,
-               CMD_CLEAN,
-               CMD_GET,
-               CMD_GETF,
-               CMD_GETALL,
-               CMD_RESPS,
-               CMD_RESPI,
-               CMD_SIZE,
-               CMD_ERROR };
+enum cmd { CMD_QUIT,
+           CMD_END,
+           CMD_PUSH,
+           CMD_POP,
+           CMD_POPF,
+           CMD_CLEAN,
+           CMD_GET,
+           CMD_GETF,
+           CMD_GETALL,
+           CMD_RESPS,
+           CMD_RESPI,
+           CMD_SIZE,
+           CMD_ERROR };
 
 enum proto_error { E_PERM,
                    E_INVAL,

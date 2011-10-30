@@ -1,5 +1,5 @@
 /* File: gpushd-client.c
-   Time-stamp: <2011-10-30 11:56:40 gawen>
+   Time-stamp: <2011-10-30 14:12:47 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -50,8 +50,6 @@
 #include "safe-call.h"
 #include "gpushd.h"
 
-#define UNIX_PATH_MAX 108
-
 #ifndef SUN_LEN
 # define SUN_LEN(ptr) ((size_t) (((struct sockaddr_un *) 0)->sun_path) \
                        + strlen ((ptr)->sun_path))
@@ -60,6 +58,8 @@
 static const char *prog_name;
 static const char *sock_path;
 static bool stay = false;
+static enum command current_request;
+static int getall_count;
 
 static struct request {
   struct request *next;
@@ -68,6 +68,7 @@ static struct request {
   const char *d_path;
   int p_int;
 } *req_stack;
+static struct request *tail_request;
 
 static opts_name {
   char name_short;
@@ -77,15 +78,19 @@ static opts_name {
 
 static void add_request(enum cmd_cli command, const char *path, int code)
 {
-  /* @FIXME: should FIFO instead */
   struct request *req = xmalloc(sizeof(struct request));
 
-  req.next    = req_stack;
+  req.next    = NULL;
   req.command = command;
   req.d_path  = path;
   req.p_int   = code;
 
-  req_stack = req;
+  if(!req_stack)
+    req_stack = req;
+  if(!tail_request)
+    tail_request = req;
+  else
+    tail_request->next = req;
 }
 
 static void help(const struct opts_name *names)
@@ -215,10 +220,11 @@ static void proceed_request(const struct request *request, int srv)
   case(CMD_INT):
     write(srv, request->p_int, sizeof(int));
     break;
+  case(CMD_GETALL):
+    getall_counter = 0;
   case(CMD_POPF):
   case(CMD_GETF):
   case(CMD_CLEAN):
-  case(CMD_GETALL):
   case(CMD_QUIT):
     break;
   case(CMD_END):
@@ -318,16 +324,101 @@ static bool proceed_server(int srv, struct cli_state *state)
   return true;
 }
 
+static bool cmd_resps(int srv, struct message *response)
+{
+  switch(current_request) {
+  case(CMD_QUIT):
+  case(CMD_END):
+  case(CMD_PUSH):
+  case(CMD_CLEAN):
+  case(CMD_RESPS):
+  case(CMD_RESPI):
+  case(CMD_SIZE):
+    warnx("unexpected string from server");
+    send_error(srv, E_INVAL);
+    break;
+  case(CMD_POP):
+  case(CMD_POPF):
+  case(CMD_GET):
+  case(CMD_GETF):
+    printf("- %s\n", response->d_path);
+    if(!stay)
+      chdir(response->d_path);
+    break;
+  case(CMD_GETALL):
+    printf("%d - %s\n", getall_counter++, response->d_path);
+    break;
+  default:
+    break;
+  }
+
+  return true;
+}
+
+static bool cmd_respi(int srv, struct message *response)
+{
+  switch(current_request) {
+  case(CMD_QUIT):
+  case(CMD_END):
+  case(CMD_PUSH):
+  case(CMD_CLEAN):
+  case(CMD_RESPS):
+  case(CMD_RESPI):
+  case(CMD_POP):
+  case(CMD_POPF):
+  case(CMD_GET):
+  case(CMD_GETF):
+  case(CMD_GETALL):
+    warnx("unexpected integer from server");
+    send_error(srv, E_INVAL);
+    break;
+  case(CMD_SIZE):
+    printf("Stack size : %d\n", reponse->p_int.value);
+    break;
+  default:
+    break;
+  }
+
+  return true;
+}
+
+static bool proceed_response(int srv, struct message *response)
+{
+  switch(request->command) {
+  case(CMD_QUIT):
+  case(CMD_END):
+    return false;
+  case(CMD_PUSH):
+  case(CMD_POP):
+  case(CMD_POPF):
+  case(CMD_CLEAN):
+  case(CMD_GET):
+  case(CMD_GETF):
+  case(CMD_GETALL):
+  case(CMD_SIZE):
+    warnx("received invalid command %d from server", req);
+    send_error(srv, E_INVAL);
+    return true;
+  case(CMD_RESPS):
+    return cmd_resps(srv, response);
+    break;
+  case(CMD_RESPI):
+    return cmd_respi(srv, response);
+    break;
+  default:
+    assert(false); /* unknown command */
+  }
+}
+
 static void proceed_request_stack(int srv)
 {
+  struct parse_state srv_state = { .state = ST_CMD,
+                                   .p_idx = 0 };
   struct request *r;
 
   for(r = request_stack ; r != NULL ; r = r->next) {
     proceed_request(r, srv);
-    if(!proceed_server(srv)) {
-      warnx("disconnected due to error");
-      break;
-    }
+    while(parse(srv, &srv_state, proceed_response));
   }
 }
 
