@@ -1,5 +1,5 @@
 /* File: gpushd-client.c
-   Time-stamp: <2011-10-30 14:12:47 gawen>
+   Time-stamp: <2011-10-30 15:21:05 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -37,6 +37,7 @@
 #include <netinet/in.h>
 #include <stdbool.h>
 #include <sysexits.h>
+#include <getopt.h>
 #include <netdb.h>
 #include <string.h>
 #include <unistd.h>
@@ -47,6 +48,7 @@
 #include <signal.h>
 #include <err.h>
 
+#include "gpushd-common.h"
 #include "safe-call.h"
 #include "gpushd.h"
 
@@ -58,32 +60,32 @@
 static const char *prog_name;
 static const char *sock_path;
 static bool stay = false;
-static enum command current_request;
-static int getall_count;
+static enum cmd current_request;
+static int getall_counter;
 
 static struct request {
   struct request *next;
 
-  enum cmd_cli command;
+  enum cmd command;
   const char *d_path;
   int p_int;
 } *req_stack;
 static struct request *tail_request;
 
-static opts_name {
+struct opts_name {
   char name_short;
   const char *name_long;
   const char *help;
 };
 
-static void add_request(enum cmd_cli command, const char *path, int code)
+static void add_request(enum cmd command, const char *path, int code)
 {
   struct request *req = xmalloc(sizeof(struct request));
 
-  req.next    = NULL;
-  req.command = command;
-  req.d_path  = path;
-  req.p_int   = code;
+  req->next    = NULL;
+  req->command = command;
+  req->d_path  = path;
+  req->p_int   = code;
 
   if(!req_stack)
     req_stack = req;
@@ -99,7 +101,7 @@ static void help(const struct opts_name *names)
   int size;
   int max = 0;
 
-  fprintf(stderr, "Usage: %s [OPTIONS] [SOCKET-PATH]\n", pgn);
+  fprintf(stderr, "Usage: %s [OPTIONS] [SOCKET-PATH]\n", prog_name);
 
   /* maximum option name size for padding */
   for(opt = names ; opt->name_long ; opt++) {
@@ -123,15 +125,18 @@ static void help(const struct opts_name *names)
   }
 }
 
-static void cmdline(int argc, const char *argv[], const char *cwd)
+static void cmdline(int argc, char * const argv[], const char *cwd)
 {
+  int exit_status = EXIT_FAILURE;
+
   enum opt { OPT_PUSH   = 'p',
              OPT_POP    = 'P',
              OPT_CLEAN  = 'c',
              OPT_GET    = 'g',
              OPT_GETALL = 'G',
-             OPT_SIZE   = 's'
-             OPT_STAY   = 'S' };
+             OPT_SIZE   = 's',
+             OPT_STAY   = 'S',
+             OPT_HELP   = 'h' };
 
   struct opts_name names[] = {
     { 'p', "push",    "Push the current directory" },
@@ -141,6 +146,7 @@ static void cmdline(int argc, const char *argv[], const char *cwd)
     { 'G', "get-all", "Get and print all directory from the stack" },
     { 's', "size",    "Get the stack size" },
     { 'S', "stay",    "Do not change directory on get or pop" },
+    { 'H', "help",    "Show this help message" },
     { 0, NULL, NULL }
   };
 
@@ -151,7 +157,8 @@ static void cmdline(int argc, const char *argv[], const char *cwd)
     { "get",     optional_argument, NULL, OPT_GET },
     { "get-all", no_argument, NULL, OPT_GETALL },
     { "size",    no_argument, NULL, OPT_SIZE },
-    { "stay",    no_argument, NULL, OPT_STAY }
+    { "stay",    no_argument, NULL, OPT_STAY },
+    { "help",    no_argument, NULL, OPT_HELP },
     { NULL, 0, NULL, 0 }
   };
 
@@ -164,9 +171,9 @@ static void cmdline(int argc, const char *argv[], const char *cwd)
     switch(c) {
     case(OPT_PUSH):
       if(optarg)
-        add_request(CMD_PUSH, cwd, atoi(optarg));
+        add_request(CMD_PUSH, optarg, 0);
       else
-        add_request(CMD_PUSHF, cwd, 0);
+        add_request(CMD_PUSH, cwd, 0);
       break;
     case(OPT_POP):
       if(optarg)
@@ -206,7 +213,7 @@ static void cmdline(int argc, const char *argv[], const char *cwd)
   sock_path = argv[optind];
 }
 
-static void proceed_request(const struct request *request, int srv)
+static void proceed_request(int srv, const struct request *request)
 {
   char cmd = request->command;
 
@@ -217,8 +224,8 @@ static void proceed_request(const struct request *request, int srv)
     write(srv, request->d_path, strlen(request->d_path));
     break;
   case(CMD_POP):
-  case(CMD_INT):
-    write(srv, request->p_int, sizeof(int));
+  case(CMD_GET):
+    write(srv, &request->p_int, sizeof(int));
     break;
   case(CMD_GETALL):
     getall_counter = 0;
@@ -235,93 +242,6 @@ static void proceed_request(const struct request *request, int srv)
   default:
     assert(false); /* not implemented */
   }
-}
-
-static bool proceed_server(int srv, struct cli_state *state)
-{
-  int i = 0;
-  char buf[IOSIZE];
-
-  ssize_t n = xread(srv, buf, IOSIZE);
-
-  if(!n) {
-    warnx("server disconnected");
-    return false;
-  }
-
-  do {
-    switch(state->state) {
-      int j;
-
-    case(ST_CMD):
-      state->p_idx           = 0;
-      state->request.command = buf[i++];
-
-      switch(state->request.command) {
-      case(CMD_PUSH):
-      case(CMD_RESPS):
-        state->state = ST_STR;
-        break;
-      case(CMD_POP):
-      case(CMD_GET):
-      case(CMD_RESPI):
-      case(CMD_ERROR):
-        state->state = ST_INT;
-        break;
-      case(CMD_END):
-      case(CMD_QUIT):
-      case(CMD_SIZE):
-      case(CMD_GETF):
-      case(CMD_POPF):
-      case(CMD_CLEAN):
-      case(CMD_GETALL):
-        state->state = ST_PROCEED;
-        break;
-      default:
-        send_error(cli, E_INVAL);
-        return false;
-      }
-
-      break;
-    case(ST_STR):
-      for(j = state->p_idx ; i != n ; j++, i++) {
-        state->request.p_string[j] = buf[i];
-        if(buf[i] == '\0') {
-          state->state = ST_PROCEED;
-          break;
-        }
-        else if(j == MAX_PATH) {
-          send_error(cli, E_LONG);
-          return false;
-        }
-      }
-
-      state->p_idx = j;
-      break;
-    case(ST_INT):
-      for(j = state->p_idx ; i != n ; j++, i++) {
-        /* since we use unix domain sockets we stick
-           to the same architecture and don't bother
-           about endianess */
-        state->request.p_int.bytes[j] = buf[i];
-        if(j == sizeof(int)) {
-          state->state = ST_PROCEED;
-          break;
-        }
-      }
-
-      state->p_idx = j;
-      break;
-    case(ST_PROCEED):
-      if(!proceed_request(cli, &state->request))
-        return false;
-      break;
-    default:
-      assert(false); /* unknown parsing state */
-    }
-  } while(i != n);
-
-  return true;
 }
 
 static bool cmd_resps(int srv, struct message *response)
@@ -341,12 +261,12 @@ static bool cmd_resps(int srv, struct message *response)
   case(CMD_POPF):
   case(CMD_GET):
   case(CMD_GETF):
-    printf("- %s\n", response->d_path);
+    printf("- %s\n", response->p_string);
     if(!stay)
-      chdir(response->d_path);
+      chdir(response->p_string);
     break;
   case(CMD_GETALL):
-    printf("%d - %s\n", getall_counter++, response->d_path);
+    printf("%d - %s\n", getall_counter++, response->p_string);
     break;
   default:
     break;
@@ -373,7 +293,7 @@ static bool cmd_respi(int srv, struct message *response)
     send_error(srv, E_INVAL);
     break;
   case(CMD_SIZE):
-    printf("Stack size : %d\n", reponse->p_int.value);
+    printf("Stack size : %d\n", response->p_int.value);
     break;
   default:
     break;
@@ -384,7 +304,7 @@ static bool cmd_respi(int srv, struct message *response)
 
 static bool proceed_response(int srv, struct message *response)
 {
-  switch(request->command) {
+  switch(response->command) {
   case(CMD_QUIT):
   case(CMD_END):
     return false;
@@ -396,7 +316,7 @@ static bool proceed_response(int srv, struct message *response)
   case(CMD_GETF):
   case(CMD_GETALL):
   case(CMD_SIZE):
-    warnx("received invalid command %d from server", req);
+    warnx("received invalid command %d from server", response->command);
     send_error(srv, E_INVAL);
     return true;
   case(CMD_RESPS):
@@ -416,13 +336,13 @@ static void proceed_request_stack(int srv)
                                    .p_idx = 0 };
   struct request *r;
 
-  for(r = request_stack ; r != NULL ; r = r->next) {
-    proceed_request(r, srv);
+  for(r = req_stack ; r != NULL ; r = r->next) {
+    proceed_request(srv, r);
     while(parse(srv, &srv_state, proceed_response));
   }
 }
 
-static client()
+static void client()
 {
   int sd;
   struct request quit       = { .command    = CMD_QUIT };
@@ -435,15 +355,15 @@ static client()
   strncpy(s_addr.sun_path, sock_path, UNIX_PATH_MAX);
 
   /* connect to the server */
-  xconnect(sd, (struct sockaddr *)&s_addr, SUN_LEN(s_addr));
+  xconnect(sd, (struct sockaddr *)&s_addr, SUN_LEN(&s_addr));
 
   proceed_request_stack(sd);
 
   /* quit only after the request has been proceeded */
-  proceed_request(&quit, sd);
+  proceed_request(sd, &quit);
 }
 
-int main(int argc, const char *argv[])
+int main(int argc, char * const argv[])
 {
   char cwd[MAX_PATH];
 
@@ -451,8 +371,8 @@ int main(int argc, const char *argv[])
   getcwd(cwd, MAX_PATH);
 
   /* get program name */
-  pgn = (const char *)strrchr(argv[0], '/');
-  pgn = pgn ? (pgn + 1) : argv[0];
+  prog_name = (const char *)strrchr(argv[0], '/');
+  prog_name = prog_name ? (prog_name + 1) : argv[0];
 
   /* parse command line and build
      the request stack */

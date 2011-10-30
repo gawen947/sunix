@@ -70,6 +70,8 @@ int xaccept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
 ssize_t xrecv(int sockfd, void *buf, size_t len, int flags);
 int xbind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
 int xconnect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+#ifdef USE_THREAD
 int xsem_init(sem_t *sem, int pshared, unsigned int value);
+#endif /* USE_THREAD */
 
 #endif /* _SAFE_CALL_H_ */
