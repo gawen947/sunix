@@ -53,12 +53,10 @@
 
 void send_error(int remote, int code)
 {
-  struct {
-    char cmd;
-    int code;
-  } message = { CMD_ERROR, code };
-
-  write(remote, &message, sizeof(message));
+  char cmd = CMD_ERROR;
+  
+  write(remote, &cmd, sizeof(char));
+  write(remote, &code, sizeof(int));
 }
 
 const char * str_error(int code)

@@ -1,5 +1,5 @@
 /* File: gpushd-client.c
-   Time-stamp: <2011-10-30 20:05:36 gawen>
+   Time-stamp: <2011-10-30 21:45:28 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -88,10 +88,9 @@ static void add_request(enum cmd command, const char *path, int code)
 
   if(!req_stack)
     req_stack = req;
-  if(!tail_request)
-    tail_request = req;
-  else
+  if(tail_request)
     tail_request->next = req;
+  tail_request = req;
 }
 
 static void help(const struct opts_name *names)
@@ -295,6 +294,14 @@ static bool cmd_respi(int srv, struct message *response)
   return true;
 }
 
+static bool cmd_error(int srv, struct message *response)
+{
+  warnx("received error from server for command %d : %s",
+        current_request, str_error(response->p_int.value));
+
+  return true;
+}
+
 static bool proceed_response(int srv, struct message *response)
 {
   switch(response->command) {
@@ -316,6 +323,8 @@ static bool proceed_response(int srv, struct message *response)
     return cmd_resps(srv, response);
   case(CMD_RESPI):
     return cmd_respi(srv, response);
+  case(CMD_ERROR):
+    return cmd_error(srv, response);
   default:
     assert(false); /* unknown command */
   }
@@ -328,7 +337,7 @@ static void proceed_request_stack(int srv)
   struct parse_state srv_state = { .state = ST_CMD,
                                    .p_idx = 0 };
   struct request *r;
-
+  int i=0;
   for(r = req_stack ; r != NULL ; r = r->next) {
     proceed_request(srv, r);
     while(parse(srv, &srv_state, proceed_response));
