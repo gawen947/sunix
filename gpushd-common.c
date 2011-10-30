@@ -101,11 +101,10 @@ bool parse(int remote, struct parse_state *state,
     warnx("remote disconnected");
     return false;
   }
-
+  
   do {
     switch(state->state) {
       int j;
-
     case(ST_CMD):
       state->p_idx       = 0;
       state->msg.command = buf[i++];
@@ -128,6 +127,7 @@ bool parse(int remote, struct parse_state *state,
       case(CMD_POPF):
       case(CMD_CLEAN):
       case(CMD_GETALL):
+        state->state = ST_CMD;
         if(!proceed(remote, &state->msg))
           return false;
         break;
@@ -138,9 +138,10 @@ bool parse(int remote, struct parse_state *state,
 
       break;
     case(ST_STR):
-      for(j = state->p_idx ; i != n ; j++, i++) {
+      for(j = state->p_idx ; i < n ; j++, i++) {
         state->msg.p_string[j] = buf[i];
         if(buf[i] == '\0') {
+          state->state = ST_CMD;
           if(!proceed(remote, &state->msg))
             return false;
           break;
@@ -154,12 +155,13 @@ bool parse(int remote, struct parse_state *state,
       state->p_idx = j;
       break;
     case(ST_INT):
-      for(j = state->p_idx ; i != n ; j++, i++) {
+      for(j = state->p_idx ; i < n ; j++, i++) {
         /* since we use unix domain sockets we stick
            to the same architecture and don't bother
            about endianess */
         state->msg.p_int.bytes[j] = buf[i];
         if(j == sizeof(int)) {
+          state->state = ST_CMD;
           if(!proceed(remote, &state->msg))
             return false;
           break;

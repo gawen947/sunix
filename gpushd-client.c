@@ -1,5 +1,5 @@
 /* File: gpushd-client.c
-   Time-stamp: <2011-10-30 18:23:30 gawen>
+   Time-stamp: <2011-10-30 19:28:20 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -222,11 +222,13 @@ static void proceed_request(int srv, const struct request *request)
 {
   char cmd = request->command;
 
+  current_request = cmd;
+
   write(srv, &cmd, sizeof(char));
 
   switch(request->command) {
   case(CMD_PUSH):
-    write(srv, request->d_path, strlen(request->d_path));
+    write(srv, request->d_path, strlen(request->d_path) + 1);
     break;
   case(CMD_POP):
   case(CMD_GET):
@@ -237,12 +239,12 @@ static void proceed_request(int srv, const struct request *request)
   case(CMD_POPF):
   case(CMD_GETF):
   case(CMD_CLEAN):
+  case(CMD_SIZE):
   case(CMD_QUIT):
     break;
   case(CMD_END):
   case(CMD_RESPS):
   case(CMD_RESPI):
-  case(CMD_SIZE):
   case(CMD_ERROR):
   default:
     assert(false); /* not implemented */
@@ -288,10 +290,10 @@ static bool cmd_respi(int srv, struct message *response)
   case(CMD_PUSH):
   case(CMD_CLEAN):
   case(CMD_RESPS):
-  case(CMD_RESPI):
   case(CMD_POP):
   case(CMD_POPF):
   case(CMD_GET):
+  case(CMD_RESPI):
   case(CMD_GETF):
   case(CMD_GETALL):
     warnx("unexpected integer from server");
@@ -326,10 +328,8 @@ static bool proceed_response(int srv, struct message *response)
     return true;
   case(CMD_RESPS):
     return cmd_resps(srv, response);
-    break;
   case(CMD_RESPI):
     return cmd_respi(srv, response);
-    break;
   default:
     assert(false); /* unknown command */
   }

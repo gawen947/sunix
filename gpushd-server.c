@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2011-10-30 18:38:25 gawen>
+   Time-stamp: <2011-10-30 19:30:42 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -130,7 +130,6 @@ static bool cmd_pop(int cli, struct message *request)
   struct d_node *c = stack.dirs, *o = NULL;
   int i, j = request->p_int.value;
   char cmd = CMD_RESPS;
-  size_t path_size;
 
   /* stack critical read-write section */
   sem_wait(&stack.mutex);
@@ -160,9 +159,8 @@ static bool cmd_pop(int cli, struct message *request)
 
   /* we don't send the response
      inside the critical section */
-  path_size = strlen(result.d_path);
   write(cli, &cmd, sizeof(char));
-  write(cli, result.d_path, path_size);
+  write(cli, result.d_path, strlen(result.d_path) + 1);
 
   return true;
 }
@@ -172,7 +170,6 @@ static bool cmd_popf(int cli, struct message *request)
   struct d_node *c = stack.dirs;
   struct d_node result;
   char cmd = CMD_RESPS;
-  size_t path_size;
 
   /* stack critical read section */
   sem_wait(&stack.mutex);
@@ -191,9 +188,8 @@ static bool cmd_popf(int cli, struct message *request)
 
   /* again, we don't send the response
      inside the critical section */
-  path_size = strlen(result.d_path);
   write(cli, &cmd, sizeof(char));
-  write(cli, result.d_path, path_size);
+  write(cli, result.d_path, strlen(result.d_path) + 1);
 
   return true;
 }
@@ -225,7 +221,6 @@ static bool cmd_get(int cli, struct message *request)
   struct d_node *c = stack.dirs;
   struct d_node result;
   char cmd = CMD_RESPS;
-  size_t path_size;
 
   /* stack critical read section */
   sem_wait(&stack.mutex);
@@ -244,9 +239,8 @@ static bool cmd_get(int cli, struct message *request)
 
   /* again, we don't send the response
      inside the critical section */
-  path_size = strlen(result.d_path);
   write(cli, &cmd, sizeof(char));
-  write(cli, result.d_path, path_size);
+  write(cli, result.d_path, strlen(result.d_path) + 1);
 
   return true;
 }
@@ -255,7 +249,6 @@ static bool cmd_getf(int cli, struct message *request)
 {
   struct d_node result;
   char cmd = CMD_RESPS;
-  size_t path_size;
 
   /* stack critical read section */
   sem_wait(&stack.mutex);
@@ -271,16 +264,16 @@ static bool cmd_getf(int cli, struct message *request)
 
   /* again, we don't send the response
      inside the critical section */
-  path_size = strlen(result.d_path);
   write(cli, &cmd, sizeof(char));
-  write(cli, result.d_path, path_size);
+  write(cli, result.d_path, strlen(result.d_path) + 1);
 
   return true;
 }
 
 static bool cmd_size(int cli, struct message *request)
 {
-  size_t size;
+  int size;
+  char cmd = CMD_RESPI;
 
   /* stack critical read section */
   sem_wait(&stack.mutex);
@@ -288,6 +281,9 @@ static bool cmd_size(int cli, struct message *request)
     size = stack.size;
   }
   sem_post(&stack.mutex);
+
+  write(cli, &cmd, sizeof(char));
+  write(cli, &size, sizeof(int));
 
   return true;
 }
@@ -304,7 +300,7 @@ static bool cmd_getall(int cli, struct message *request)
        the message inside the critical section */
     for(; c != NULL ; c = c->next) {
       write(cli, &cmd, sizeof(char));
-      write(cli, c->d_path, strlen(c->d_path));
+      write(cli, c->d_path, strlen(c->d_path) + 1);
     }
   }
   sem_post(&stack.mutex);
