@@ -78,7 +78,7 @@ install: all
 	$(INSTALL) uptime-ng $(BIN)
 	$(INSTALL) args-length $(BIN)
 	$(INSTALL) gpushd-server $(BIN)
-	$(INSTALL) gpushd-client) $(BIN)
+	$(INSTALL) gpushd-client $(BIN)
 	@echo "The following components should be installed manually"
 	@echo "since they may break base system."
 	@echo "  true, false, cat, echo, basename, sleep, unlink, yes"

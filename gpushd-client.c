@@ -1,5 +1,5 @@
 /* File: gpushd-client.c
-   Time-stamp: <2011-10-30 21:45:28 gawen>
+   Time-stamp: <2011-10-30 22:50:52 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -172,9 +172,9 @@ static void cmdline(int argc, char * const argv[], const char *cwd)
       break;
     case(OPT_POP):
       if(optarg)
-        add_request(CMD_POP, cwd, atoi(optarg));
+        add_request(CMD_POP, NULL, atoi(optarg));
       else
-        add_request(CMD_POPF, cwd, 0);
+        add_request(CMD_POPF, NULL, 0);
       break;
     case(OPT_CLEAN):
       add_request(CMD_CLEAN, NULL, 0);

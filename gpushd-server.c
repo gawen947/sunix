@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2011-10-30 20:01:08 gawen>
+   Time-stamp: <2011-10-30 21:52:05 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -94,7 +94,8 @@ static void cli_timeout(int signum)
 {
   /* one problem with that,
      thread aborted but connection
-     stall */
+     stall : also note that this
+     doesn't work at all */
   warnx("client timeout");
   pthread_exit(NULL);
 }
