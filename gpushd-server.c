@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2011-10-30 18:30:23 gawen>
+   Time-stamp: <2011-10-30 18:38:25 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -57,7 +57,7 @@
 
 #define CHECK_BIT(bit, flag) ((flag) & (1 << (bit)))
 #define SET_BIT(bit, flag) ((flag) |= (1 << (bit)))
-#define CLEAR_BIT(bit, flag) ((flag) |= ~(1 << (bit)))
+#define CLEAR_BIT(bit, flag) ((flag) &= ~(1 << (bit)))
 
 static const char *sock_path;
 
