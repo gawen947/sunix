@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2011-10-29 02:52:25 gawen>
+   Time-stamp: <2011-10-30 11:41:57 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -321,13 +321,13 @@ static bool cmd_size(int cli, struct request *request)
 static bool cmd_getall(int cli, struct request *request)
 {
   struct d_node *c = stack.dirs;
-  char cmd = CMD_RESPALLS;
-
-  write(cli, &cmd, sizeof(char));
+  char cmd = CMD_RESPS;
 
   /* stack critical read section */
   sem_wait(&stack.mutex);
   {
+    write(cli, &cmd, sizeof(char));
+
     /* we got no choice here but to send
        the message inside the critical section */
     for(; c != NULL ; c = c->next)
@@ -338,14 +338,21 @@ static bool cmd_getall(int cli, struct request *request)
   return true;
 }
 
+static bool cmd_end(int cli, struct request *request)
+{
+  char cmd = CMD_END;
+
+  write(cli, &cmd, sizeof(char));
+}
+
 static bool proceed_request(int cli, struct request *request)
 {
   switch(request->command) {
   case(CMD_QUIT):
     return false;
+  case(CMD_END):
   case(CMD_RESPI):
   case(CMD_RESPS):
-  case(CMD_RESPALLS):
   case(CMD_ERROR):
     warnx("received invalid command %d from client", request->command);
     send_error(cli, E_PERM);
@@ -404,6 +411,7 @@ static bool proceed_client(int cli, struct cli_state *state)
       case(CMD_ERROR):
         state->state = ST_INT;
         break;
+      case(CMD_END):
       case(CMD_QUIT):
       case(CMD_SIZE):
       case(CMD_GETF):
@@ -474,6 +482,8 @@ static void * new_cli(void *arg)
   alarm(REQUEST_TIMEOUT);
 
   while(proceed_client(pool.fd_cli[idx], &cli));
+
+  close(pool.fd_cli[idx]);
 
   /* free the thread slot */
   CLEAR_BIT(idx, pool.st_threads);

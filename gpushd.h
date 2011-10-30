@@ -1,5 +1,5 @@
-/* File: safe-call.h
-   Time-stamp: <2011-07-15 08:50:50 gawen>
+/* File: gpushd.h
+   Time-stamp: <2011-10-27 18:15:08 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -28,48 +28,29 @@
    OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
    SUCH DAMAGE. */
 
-#ifndef _SAFE_CALL_H_
-#define _SAFE_CALL_H_
+#ifndef _GPUSHD_H_
+#define _GPUSHD_H_
 
-#include <sys/socket.h>
-#include <semaphore.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <utime.h>
+#define MAX_PATH 256
 
-#define MIN(x,y) ((x) < (y) ? (x) : (y))
-#define MAX(x,y) ((x) > (y) ? (x) : (y))
-#define S_BOOLEAN(a) (a ? "yes" : "no")
+enum cmd_cli { CMD_QUIT,
+               CMD_END,
+               CMD_PUSH,
+               CMD_POP,
+               CMD_POPF,
+               CMD_CLEAN,
+               CMD_GET,
+               CMD_GETF,
+               CMD_GETALL,
+               CMD_RESPS,
+               CMD_RESPI,
+               CMD_SIZE,
+               CMD_ERROR };
 
-#define verbose(t, r, ...) if(r > t) fprintf (stderr, __VA_ARGS__)
+enum proto_error { E_PERM,
+                   E_INVAL,
+                   E_NFOUND,
+                   E_LONG,
+                   E_FULL };
 
-#ifndef NDEBUG
-# define UNPTR(a) a = NULL
-#else
-# define UNPTR(a)
-#endif
-
-int xfork();
-int xpipe(int pipefd[2]);
-int xdup2(int oldfd, int newfd);
-char * xgetcwd(char *buf, size_t size);
-void * xmalloc(size_t size);
-void * xrealloc(void *ptr, size_t size);
-int xlisten(int sockfd, int backlog);
-ssize_t xwrite(int fd, const void *buf, size_t count);
-ssize_t xread(int fd, void *buf, size_t count);
-int xstat(const char *path, struct stat *buf);
-int xchown(const char *path, uid_t owner, gid_t group);
-char * xreadlink_malloc_n(const char *filename, ssize_t *n);
-int xutime(const char *filename, const struct utimbuf *times);
-int xchdir(const char *path);
-int xsocket(int domain, int type, int proto);
-ssize_t xsend(int sockfd, const void *buf, size_t len, int flags);
-int xaccept(int sockfd, struct sockaddr *addr, socklen_t *addrlen);
-ssize_t xrecv(int sockfd, void *buf, size_t len, int flags);
-int xbind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
-int xconnect(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
-int xsem_init(sem_t *sem, int pshared, unsigned int value);
-
-#endif /* _SAFE_CALL_H_ */
+#endif /* _GPUSHD_H_ */
