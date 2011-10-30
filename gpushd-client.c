@@ -1,5 +1,5 @@
 /* File: gpushd-client.c
-   Time-stamp: <2011-10-30 19:28:20 gawen>
+   Time-stamp: <2011-10-30 19:39:10 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -333,6 +333,8 @@ static bool proceed_response(int srv, struct message *response)
   default:
     assert(false); /* unknown command */
   }
+
+  return false;
 }
 
 static void proceed_request_stack(int srv)

@@ -144,6 +144,7 @@ bool parse(int remote, struct parse_state *state,
           state->state = ST_CMD;
           if(!proceed(remote, &state->msg))
             return false;
+          i++;
           break;
         }
         else if(j == MAX_PATH) {
@@ -160,10 +161,11 @@ bool parse(int remote, struct parse_state *state,
            to the same architecture and don't bother
            about endianess */
         state->msg.p_int.bytes[j] = buf[i];
-        if(j == sizeof(int)) {
+        if(j == sizeof(int) - 1) {
           state->state = ST_CMD;
           if(!proceed(remote, &state->msg))
             return false;
+          i++;
           break;
         }
       }
