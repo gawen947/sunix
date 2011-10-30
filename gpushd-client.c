@@ -1,5 +1,5 @@
 /* File: gpushd-client.c
-   Time-stamp: <2011-10-30 15:21:05 gawen>
+   Time-stamp: <2011-10-30 15:40:56 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -136,6 +136,7 @@ static void cmdline(int argc, char * const argv[], const char *cwd)
              OPT_GETALL = 'G',
              OPT_SIZE   = 's',
              OPT_STAY   = 'S',
+             OPT_SOCKET = 'f',
              OPT_HELP   = 'h' };
 
   struct opts_name names[] = {
@@ -146,7 +147,8 @@ static void cmdline(int argc, char * const argv[], const char *cwd)
     { 'G', "get-all", "Get and print all directory from the stack" },
     { 's', "size",    "Get the stack size" },
     { 'S', "stay",    "Do not change directory on get or pop" },
-    { 'H', "help",    "Show this help message" },
+    { 'f', "socket",  "Socket path" },
+    { 'h', "help",    "Show this help message" },
     { 0, NULL, NULL }
   };
 
@@ -158,12 +160,13 @@ static void cmdline(int argc, char * const argv[], const char *cwd)
     { "get-all", no_argument, NULL, OPT_GETALL },
     { "size",    no_argument, NULL, OPT_SIZE },
     { "stay",    no_argument, NULL, OPT_STAY },
+    { "socket",  required_argument, NULL, OPT_SOCKET },
     { "help",    no_argument, NULL, OPT_HELP },
     { NULL, 0, NULL, 0 }
   };
 
   while(1) {
-    int c = getopt_long(argc, argv, "p:P:cg:GsS", opts, NULL);
+    int c = getopt_long(argc, argv, "p:P:cg:GsSf:h", opts, NULL);
 
     if(c == -1)
       break;
@@ -199,6 +202,9 @@ static void cmdline(int argc, char * const argv[], const char *cwd)
     case(OPT_STAY):
       stay = true;
       break;
+    case(OPT_SOCKET):
+      sock_path = optarg;
+      break;
     case(OPT_HELP):
       exit_status = EXIT_SUCCESS;
     default:
@@ -207,10 +213,9 @@ static void cmdline(int argc, char * const argv[], const char *cwd)
     }
   }
 
-  /* consider remaining arguments */
-  if(argc - optind != 1)
+  /* check for socket path */
+  if(!sock_path)
     errx(EXIT_FAILURE, "except socket path");
-  sock_path = argv[optind];
 }
 
 static void proceed_request(int srv, const struct request *request)
