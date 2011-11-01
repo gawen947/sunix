@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2011-10-31 00:17:39 gawen>
+   Time-stamp: <2011-11-01 03:41:35 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -51,6 +51,12 @@
 #include "safe-call.h"
 #include "gpushd.h"
 
+/*
+ * TODO:
+ *  - use a cleaner thread
+ *  - use a swap capability
+ */
+
 #define MAX_CONCURRENCY 16
 #define MAX_STACK       65535
 #define REQUEST_TIMEOUT 1
@@ -67,6 +73,11 @@ static struct thread_pool {
   pthread_t threads[MAX_CONCURRENCY]; /* threads */
   int       fd_cli[MAX_CONCURRENCY];  /* client file descriptor */
   uint16_t  st_threads;               /* threads state */
+
+  pthread_t cleaner;                  /* cleaner thread */
+  sem_t clr_bell;                     /* call the cleaner thread */
+  sem_t clr_done[MAX_CONCURRENCY];    /* clean threads */
+  uint16_t st_cleaner;                /* cleaner thread state */
 } pool;
 
 static struct dir_stack {
@@ -386,6 +397,10 @@ static void * new_cli(void *arg)
 
   close(pool.fd_cli[idx]);
 
+  /* signal the cleaner thread */
+  SET_BIT(idx, pool.st_cleaner);
+  sem_post(&pool.clr_bell);
+
   /* free the thread slot */
   CLEAR_BIT(idx, pool.st_threads);
   sem_post(&pool.available);
@@ -415,8 +430,12 @@ static void server(const char *sock_path)
     /* wait for the first available thread */
     sem_wait(&pool.available);
 
+    /* fix this, use T(16) at each turn */
     for(i = pool.idx ; CHECK_BIT(i, pool.st_threads) ;
         i = (i + 1) % MAX_CONCURRENCY);
+
+    /* wait for it to be cleaned */
+    sem_wait(&pool.clr_done[i]);
 
     /* setup client thread */
     SET_BIT(i, pool.st_threads);
@@ -425,23 +444,44 @@ static void server(const char *sock_path)
     if(pthread_create(&pool.threads[i], NULL, new_cli, (void *)(long)i))
       err(EXIT_FAILURE, "cannot create thread");
 
-    /* disable multithread for now, since we need a way to free
-       those ressources when the thread stopped */
-    pthread_join(pool.threads[i], NULL);
-
     pool.idx = (pool.idx + 1) % MAX_CONCURRENCY;
   }
 }
 
+static void * cleaner_thread(void *null)
+{
+  /* this is the default though */
+  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+
+  while(1) {
+    int i;
+
+    sem_wait(&pool.clr_bell);
+    for(i = 0 ; i < MAX_CONCURRENCY ; i++) {
+      if(CHECK_BIT(i, pool.st_cleaner)) {
+        CLEAR_BIT(i, pool.st_cleaner);
+        pthread_join(pool.threads[i], NULL);
+        sem_post(&pool.clr_done[i]);
+      }
+    }
+  }
+
+  return NULL; /* we never get here */
+}
+
 int main(int argc, const char *argv[])
 {
+  int n = MAX_CONCURRENCY;
   struct sigaction act = { .sa_handler = signal_clean,
                            .sa_flags   = 0 };
 
   if(argc != 2)
     errx(EXIT_FAILURE, "usage <socket-path>");
 
+  while(n--)
+    xsem_init(&pool.clr_done[n], 0, 1);
   xsem_init(&pool.available, 0, MAX_CONCURRENCY);
+  xsem_init(&pool.clr_bell, 0, 0);
   xsem_init(&stack.mutex, 0, 1);
 
   /* unlink socket on exit */
@@ -449,6 +489,10 @@ int main(int argc, const char *argv[])
   sigaction(SIGTERM, &act, NULL);
   sigaction(SIGSTOP, &act, NULL);
   sigaction(SIGINT, &act, NULL);
+
+  /* start cleaner thread */
+  if(pthread_create(&pool.cleaner, NULL, cleaner_thread, NULL))
+    err(EXIT_FAILURE, "cannot create thread");
 
   atexit(exit_clean);
   sock_path = argv[1];
