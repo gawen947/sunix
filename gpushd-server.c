@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2011-11-04 14:11:12 gawen>
+   Time-stamp: <2011-11-04 14:40:24 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -131,11 +131,15 @@ static void swap_save(const char *swap_file)
 
 static void swap_load(const char *swap_file)
 {
+  struct d_node *last = NULL;
   uint32_t magik1;
   uint32_t magik2;
   uint32_t version;
 
-  int fd = xopen(swap_file, O_RDONLY, 0);
+  int fd = open(swap_file, O_RDONLY, 0);
+
+  if(fd < 0)
+    return;
 
   xread(fd, &magik1, sizeof(uint32_t));
   xread(fd, &magik2, sizeof(uint32_t));
@@ -176,8 +180,13 @@ static void swap_load(const char *swap_file)
         return;
       }
 
-      new->next  = stack.dirs;
-      stack.dirs = new;
+      new->next = NULL;
+
+      if(!last)
+        stack.dirs = new;
+      else
+        last->next = new;
+      last = new;
       stack.size++;
     }
     sem_post(&stack.mutex);
@@ -621,8 +630,8 @@ int main(int argc, const char *argv[])
   if(argc == 3)
     swap_path = argv[2];
   sock_path = argv[1];
-
-  swap_load(swap_path);
+  if(swap_path)
+    swap_load(swap_path);
   server(argv[1]);
 
   return EXIT_SUCCESS;
