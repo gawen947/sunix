@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2011-11-04 10:58:39 gawen>
+   Time-stamp: <2011-11-04 11:57:35 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -73,8 +73,10 @@ static struct thread_pool {
   pthread_t threads[MAX_CONCURRENCY]; /* threads */
   int       fd_cli[MAX_CONCURRENCY];  /* client file descriptor */
   uint16_t  st_threads;               /* threads state */
+  sem_t     st_mutex;                 /* mutex for threads */
 
   pthread_t cleaner;                  /* cleaner thread */
+  sem_t clr_mutex;                    /* mutex for cleaner state */
   sem_t clr_bell;                     /* call the cleaner thread */
   sem_t clr_done[MAX_CONCURRENCY];    /* clean threads */
   uint16_t st_cleaner;                /* cleaner thread state */
@@ -387,8 +389,6 @@ static void * new_cli(void *arg)
   struct sigaction act   = { .sa_handler = cli_timeout,
                              .sa_flags   = 0 };
 
-  printf("CLI: %d - %d\n", idx, pool.fd_cli[idx]);
-
   /* ensure this thread won't live more than REQUEST_TIMEOUT seconds */
   sigfillset(&act.sa_mask);
   sigaction(SIGALRM, &act, NULL);
@@ -400,11 +400,15 @@ static void * new_cli(void *arg)
   close(pool.fd_cli[idx]);
 
   /* signal the cleaner thread */
+  sem_wait(&pool.clr_mutex);
   SET_BIT(idx, pool.st_cleaner);
+  sem_post(&pool.clr_mutex);
   sem_post(&pool.clr_bell);
 
   /* free the thread slot */
+  sem_wait(&pool.st_mutex);
   CLEAR_BIT(idx, pool.st_threads);
+  sem_post(&pool.st_mutex);
   sem_post(&pool.available);
 
   alarm(0);
@@ -440,7 +444,9 @@ static void server(const char *sock_path)
     sem_wait(&pool.clr_done[i]);
 
     /* setup client thread */
+    sem_wait(&pool.st_mutex);
     SET_BIT(i, pool.st_threads);
+    sem_post(&pool.st_mutex);
     pool.fd_cli[i] = fd;
 
     if(pthread_create(&pool.threads[i], NULL, new_cli, (void *)(long)i))
@@ -458,7 +464,10 @@ static void * cleaner_thread(void *null)
     sem_wait(&pool.clr_bell);
     for(i = 0 ; i < MAX_CONCURRENCY ; i++) {
       if(CHECK_BIT(i, pool.st_cleaner)) {
+        sem_wait(&pool.clr_mutex);
         CLEAR_BIT(i, pool.st_cleaner);
+        sem_post(&pool.clr_mutex);
+
         pthread_join(pool.threads[i], NULL);
         sem_post(&pool.clr_done[i]);
       }
@@ -480,7 +489,9 @@ int main(int argc, const char *argv[])
   while(n--)
     xsem_init(&pool.clr_done[n], 0, 1);
   xsem_init(&pool.available, 0, MAX_CONCURRENCY);
+  xsem_init(&pool.st_mutex, 0, 1);
   xsem_init(&pool.clr_bell, 0, 0);
+  xsem_init(&pool.clr_mutex, 0, 1);
   xsem_init(&stack.mutex, 0, 1);
 
   /* unlink socket on exit */
