@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2011-11-04 14:40:24 gawen>
+   Time-stamp: <2011-11-04 15:47:57 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -28,8 +28,9 @@
    OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
    SUCH DAMAGE. */
 
-#define _BSD_SOURCE 1
-#define _POSIX_SOURCE 1
+#define _BSD_SOURCE
+#define _POSIX_SOURCE
+#define _POSIX_C_SOURCE 201111L
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -44,6 +45,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <assert.h>
 #include <pthread.h>
 #include <signal.h>
@@ -62,7 +64,6 @@ enum s_magic {
 
 /*
  * TODO:
- *  - use a swap capability
  *  - avoid duplicates
  */
 
@@ -91,6 +92,18 @@ static struct thread_pool {
   uint16_t st_cleaner;                /* cleaner thread state */
 } pool;
 
+static struct stats {
+  size_t nb_cli;     /* clients connected */
+  size_t nb_srv;     /* server started */
+  size_t nb_rcv;     /* commands received */
+  size_t nb_snd;     /* commands sent */
+  size_t nb_err;     /* error sent */
+
+  uint32_t max_nsec; /* max request time */
+  uint32_t min_nsec; /* min request time */
+  uint64_t sum_nsec; /* total request time */
+} stats;
+
 static struct dir_stack {
   sem_t mutex;
   size_t size;
@@ -101,6 +114,66 @@ static struct dir_stack {
     char d_path[MAX_PATH];
   } *dirs;
 } stack;
+
+static void swap_write_stats(int fd)
+{
+  uint32_t ul;
+  uint64_t ull;
+
+  ul = htole32(stats.nb_cli);
+  xwrite(fd, &ul, sizeof(ul));
+
+  ul = htole32(stats.nb_srv);
+  xwrite(fd, &ul, sizeof(ul));
+
+  ul = htole32(stats.nb_rcv);
+  xwrite(fd, &ul, sizeof(ul));
+
+  ul = htole32(stats.nb_snd);
+  xwrite(fd, &ul, sizeof(ul));
+
+  ul = htole32(stats.nb_err);
+  xwrite(fd, &ul, sizeof(ul));
+
+  ul = htole32(stats.max_nsec);
+  xwrite(fd, &ul, sizeof(ul));
+
+  ul = htole32(stats.min_nsec);
+  xwrite(fd, &ul, sizeof(ul));
+
+  ull = htole64(stats.sum_nsec);
+  xwrite(fd, &ull, sizeof(ull));
+}
+
+static void swap_read_stats(int fd)
+{
+  uint32_t ul;
+  uint64_t ull;
+
+  xread(fd, &ul, sizeof(ul));
+  stats.nb_cli = le32toh(ul);
+
+  xread(fd, &ul, sizeof(ul));
+  stats.nb_srv = le32toh(ul);
+
+  xread(fd, &ul, sizeof(ul));
+  stats.nb_rcv = le32toh(ul);
+
+  xread(fd, &ul, sizeof(ul));
+  stats.nb_snd = le32toh(ul);
+
+  xread(fd, &ul, sizeof(ul));
+  stats.nb_err = le32toh(ul);
+
+  xread(fd, &ul, sizeof(ul));
+  stats.max_nsec = le32toh(ul);
+
+  xread(fd, &ul, sizeof(ul));
+  stats.min_nsec = le32toh(ul);
+
+  xread(fd, &ull, sizeof(ull));
+  stats.sum_nsec = le64toh(ull);
+}
 
 static void swap_save(const char *swap_file)
 {
@@ -119,6 +192,8 @@ static void swap_save(const char *swap_file)
 
   /* close stack until exit */
   sem_wait(&stack.mutex);
+
+  swap_write_stats(fd);
 
   for(; c != NULL ; c = c->next) {
     uint8_t size = strlen(c->d_path);
@@ -158,6 +233,8 @@ static void swap_load(const char *swap_file)
     return;
   }
 
+  swap_read_stats(fd);
+
   while(1) {
     struct d_node *new = xmalloc(sizeof(struct d_node));
     uint8_t size;
@@ -195,6 +272,17 @@ static void swap_load(const char *swap_file)
   close(fd);
 }
 
+static uint64_t substract_nsec(const struct timespec *begin,
+                               const struct timespec *end)
+{
+  uint64_t b = begin->tv_sec * 1000000000 + begin->tv_nsec;
+  uint64_t e = end->tv_sec * 1000000000 + end->tv_nsec;
+
+  assert(e > b);
+
+  return (e - b);
+}
+
 static void exit_clean()
 {
   unlink(sock_path);
@@ -221,6 +309,13 @@ static void cli_timeout(int signum)
   pthread_exit(NULL);
 }
 
+static void s_send_error(int cli, int code)
+{
+  send_error(cli, code);
+  stats.nb_snd++;
+  stats.nb_err++;
+}
+
 static bool cmd_push(int cli, struct message *request)
 {
   struct d_node *new = xmalloc(sizeof(struct d_node));
@@ -232,7 +327,7 @@ static bool cmd_push(int cli, struct message *request)
   {
     if(stack.size == MAX_STACK) {
       sem_post(&stack.mutex);  /* release early */
-      send_error(cli, E_FULL);
+      s_send_error(cli, E_FULL);
       free(new);
       return true;
     }
@@ -260,9 +355,9 @@ static bool cmd_pop(int cli, struct message *request)
       if(c == NULL) {
         sem_post(&stack.mutex); /* release early */
         if(stack.size)
-          send_error(cli, E_NFOUND);
+          s_send_error(cli, E_NFOUND);
         else
-          send_error(cli, E_EMPTY);
+          s_send_error(cli, E_EMPTY);
         return true;
       }
 
@@ -286,6 +381,7 @@ static bool cmd_pop(int cli, struct message *request)
      inside the critical section */
   write(cli, &cmd, sizeof(char));
   write(cli, result.d_path, strlen(result.d_path) + 1);
+  stats.nb_snd++;
 
   return true;
 }
@@ -302,9 +398,9 @@ static bool cmd_popf(int cli, struct message *request)
     if(!stack.dirs) {
       sem_post(&stack.mutex);
       if(stack.size)
-        send_error(cli, E_NFOUND);
+        s_send_error(cli, E_NFOUND);
       else
-        send_error(cli, E_EMPTY);
+        s_send_error(cli, E_EMPTY);
       return true;
     }
 
@@ -318,6 +414,7 @@ static bool cmd_popf(int cli, struct message *request)
      inside the critical section */
   write(cli, &cmd, sizeof(char));
   write(cli, result.d_path, strlen(result.d_path) + 1);
+  stats.nb_snd++;
 
   return true;
 }
@@ -357,9 +454,9 @@ static bool cmd_get(int cli, struct message *request)
       if(c == NULL) {
         sem_post(&stack.mutex); /* release early */
         if(stack.size)
-          send_error(cli, E_NFOUND);
+          s_send_error(cli, E_NFOUND);
         else
-          send_error(cli, E_EMPTY);
+          s_send_error(cli, E_EMPTY);
         return true;
       }
     }
@@ -372,6 +469,7 @@ static bool cmd_get(int cli, struct message *request)
      inside the critical section */
   write(cli, &cmd, sizeof(char));
   write(cli, result.d_path, strlen(result.d_path) + 1);
+  stats.nb_snd++;
 
   return true;
 }
@@ -387,9 +485,9 @@ static bool cmd_getf(int cli, struct message *request)
     if(!stack.dirs) {
       sem_post(&stack.mutex);
       if(stack.size)
-        send_error(cli, E_NFOUND);
+        s_send_error(cli, E_NFOUND);
       else
-        send_error(cli, E_EMPTY);
+        s_send_error(cli, E_EMPTY);
       return true;
     }
     result = *stack.dirs;
@@ -400,6 +498,7 @@ static bool cmd_getf(int cli, struct message *request)
      inside the critical section */
   write(cli, &cmd, sizeof(char));
   write(cli, result.d_path, strlen(result.d_path) + 1);
+  stats.nb_snd++;
 
   return true;
 }
@@ -418,6 +517,7 @@ static bool cmd_size(int cli, struct message *request)
 
   write(cli, &cmd, sizeof(char));
   write(cli, &size, sizeof(int));
+  stats.nb_snd++;
 
   return true;
 }
@@ -435,6 +535,7 @@ static bool cmd_getall(int cli, struct message *request)
     for(; c != NULL ; c = c->next) {
       write(cli, &cmd, sizeof(char));
       write(cli, c->d_path, strlen(c->d_path) + 1);
+      stats.nb_snd++;
     }
   }
   sem_post(&stack.mutex);
@@ -457,12 +558,14 @@ static bool proceed_request(int cli, struct message *request)
 
   switch(request->command) {
   case(CMD_QUIT):
+    stats.nb_rcv++;
     return false;
   case(CMD_END):
   case(CMD_RESPI):
   case(CMD_RESPS):
     warnx("received invalid command %d from client", request->command);
-    send_error(cli, E_PERM);
+    s_send_error(cli, E_PERM);
+    stats.nb_rcv++;
     result = true;
     break;
   case(CMD_ERROR):
@@ -498,16 +601,22 @@ static bool proceed_request(int cli, struct message *request)
 
   write(cli, &end, sizeof(char));
 
+  stats.nb_rcv++;
+
   return result;
 }
 
 static void * new_cli(void *arg)
 {
+  uint64_t req_nsec;
+  struct timespec begin, end;
   int idx = (long)arg;
   struct parse_state cli = { .state = ST_CMD,
                              .p_idx = 0 };
   struct sigaction act   = { .sa_handler = cli_timeout,
                              .sa_flags   = 0 };
+
+  clock_gettime(CLOCK_MONOTONIC, &begin);
 
   /* ensure this thread won't live more than REQUEST_TIMEOUT seconds */
   sigfillset(&act.sa_mask);
@@ -533,6 +642,17 @@ static void * new_cli(void *arg)
 
   alarm(0);
 
+  clock_gettime(CLOCK_MONOTONIC, &end);
+
+  req_nsec = substract_nsec(&begin, &end);
+  if(req_nsec > UINT32_MAX)
+    warnx("slow request");
+  if(req_nsec > stats.max_nsec)
+    stats.max_nsec = req_nsec;
+  else if(req_nsec < stats.min_nsec)
+    stats.min_nsec = req_nsec;
+  stats.sum_nsec += req_nsec;
+
   return NULL;
 }
 
@@ -540,6 +660,8 @@ static void server(const char *sock_path)
 {
   int sd;
   struct sockaddr_un s_addr = { .sun_family = AF_UNIX };
+
+  stats.min_nsec = UINT32_MAX;
 
   /* socket creation */
   sd = xsocket(AF_UNIX, SOCK_STREAM, 0);
@@ -574,6 +696,8 @@ static void server(const char *sock_path)
 
     if(pthread_create(&pool.threads[i], NULL, new_cli, (void *)(long)i))
       err(EXIT_FAILURE, "cannot create thread");
+
+    stats.nb_cli++;
 
     pool.idx = (pool.idx + 1) % MAX_CONCURRENCY;
   }
@@ -632,6 +756,7 @@ int main(int argc, const char *argv[])
   sock_path = argv[1];
   if(swap_path)
     swap_load(swap_path);
+  stats.nb_srv++;
   server(argv[1]);
 
   return EXIT_SUCCESS;
