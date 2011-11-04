@@ -1,5 +1,5 @@
 /* File: gpushd-common.c
-   Time-stamp: <2011-10-30 14:26:27 gawen>
+   Time-stamp: <2011-11-04 12:19:41 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -54,7 +54,7 @@
 void send_error(int remote, int code)
 {
   char cmd = CMD_ERROR;
-  
+
   write(remote, &cmd, sizeof(char));
   write(remote, &code, sizeof(int));
 }
@@ -69,6 +69,9 @@ const char * str_error(int code)
     break;
   case(E_INVAL):
     s = "Invalid command";
+    break;
+  case(E_EMPTY):
+    s = "Empty stack";
     break;
   case(E_NFOUND):
     s = "Not found";
@@ -94,12 +97,12 @@ bool parse(int remote, struct parse_state *state,
   char buf[IOSIZE];
 
   ssize_t n = xrecv(remote, buf, IOSIZE, 0);
-  
+
   if(!n) {
     warnx("remote disconnected");
     return false;
   }
-  
+
   do {
     switch(state->state) {
       int j;

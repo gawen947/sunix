@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2011-11-04 11:57:35 gawen>
+   Time-stamp: <2011-11-04 12:18:04 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -53,6 +53,7 @@
 
 /*
  * TODO:
+ *  - empty error instead of notfound
  *  - do not disconnect on recv error
  *  - use a swap capability
  *  - avoid duplicates
@@ -151,7 +152,10 @@ static bool cmd_pop(int cli, struct message *request)
     for(i = 0 ; i < j ; i++, c = c->next) {
       if(c == NULL) {
         sem_post(&stack.mutex); /* release early */
-        send_error(cli, E_NFOUND);
+        if(stack.size)
+          send_error(cli, E_NFOUND);
+        else
+          send_error(cli, E_EMPTY);
         return true;
       }
 
@@ -190,7 +194,10 @@ static bool cmd_popf(int cli, struct message *request)
   {
     if(!stack.dirs) {
       sem_post(&stack.mutex);
-      send_error(cli, E_NFOUND);
+      if(stack.size)
+        send_error(cli, E_NFOUND);
+      else
+        send_error(cli, E_EMPTY);
       return true;
     }
 
@@ -242,7 +249,10 @@ static bool cmd_get(int cli, struct message *request)
     for(i = 0 ; i < j ; i++, c = c->next) {
       if(c == NULL) {
         sem_post(&stack.mutex); /* release early */
-        send_error(cli, E_NFOUND);
+        if(stack.size)
+          send_error(cli, E_NFOUND);
+        else
+          send_error(cli, E_EMPTY);
         return true;
       }
     }
@@ -269,7 +279,10 @@ static bool cmd_getf(int cli, struct message *request)
   {
     if(!stack.dirs) {
       sem_post(&stack.mutex);
-      send_error(cli, E_NFOUND);
+      if(stack.size)
+        send_error(cli, E_NFOUND);
+      else
+        send_error(cli, E_EMPTY);
       return true;
     }
     result = *stack.dirs;

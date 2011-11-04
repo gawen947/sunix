@@ -1,5 +1,5 @@
 /* File: gpushd-client.c
-   Time-stamp: <2011-11-04 11:02:59 gawen>
+   Time-stamp: <2011-11-04 12:22:14 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -301,6 +301,10 @@ static bool cmd_respi(int srv, struct message *response)
 
 static bool cmd_error(int srv, struct message *response)
 {
+  /* do not warn user on empty stack */
+  if(response->p_int.value == E_EMPTY)
+    return true;
+
   warnx("received error from server for command %d : %s",
         current_request, str_error(response->p_int.value));
 

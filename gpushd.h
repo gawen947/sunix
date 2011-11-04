@@ -1,5 +1,5 @@
 /* File: gpushd.h
-   Time-stamp: <2011-10-30 14:23:05 gawen>
+   Time-stamp: <2011-11-04 12:18:19 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -50,6 +50,7 @@ enum cmd { CMD_QUIT,
 
 enum proto_error { E_PERM,
                    E_INVAL,
+                   E_EMPTY,
                    E_NFOUND,
                    E_LONG,
                    E_FULL };
