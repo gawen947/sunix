@@ -793,7 +793,7 @@ static void * new_cli(void *arg)
     warnx("slow request");
   if(req_nsec > stats.max_nsec)
     stats.max_nsec = req_nsec;
-  else if(req_nsec < stats.min_nsec)
+  if(req_nsec < stats.min_nsec)
     stats.min_nsec = req_nsec;
   stats.sum_nsec += req_nsec;
 
@@ -885,6 +885,11 @@ int main(int argc, const char *argv[])
 
   /* unlink socket on exit */
   sigfillset(&act.sa_mask);
+  sigaction(SIGQUIT, &act, NULL);
+  sigaction(SIGTSTP, &act, NULL);
+  sigaction(SIGINT, &act, NULL);
+  sigaction(SIGSTOP, &act, NULL);
+  sigaction(SIGKILL, &act, NULL);
   sigaction(SIGTERM, &act, NULL);
   sigaction(SIGSTOP, &act, NULL);
   sigaction(SIGINT, &act, NULL);

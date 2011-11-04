@@ -51,7 +51,7 @@ link: link.c $(TLIBC_SRC)
 args-length: args-length.c $(TLIBC_SRC)
 	$(CC) $(FREE_CFLAGS) $^ -o $@
 gpushd-server: safe-call.c safe-call.h gpushd.h gpushd-server.c gpushd-common.c gpushd-common.h
-	$(CC) $(CFLAGS) -pthread -lrt -DUSE_THREAD=1 $^ -o $@
+	$(CC) $(CFLAGS) -pthread -lrt -DUSE_THREAD=1 -DNDEBUG=1 $^ -o $@
 gpushd-client: safe-call.c safe-call.h gpushd.h gpushd-client.c gpushd-common.c gpushd-common.h
 	$(CC) $(CFLAGS) $^ -o $@
 
