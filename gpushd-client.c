@@ -1,5 +1,5 @@
 /* File: gpushd-client.c
-   Time-stamp: <2011-11-04 16:29:33 gawen>
+   Time-stamp: <2011-11-04 16:37:08 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -301,6 +301,18 @@ static bool cmd_resps(int srv, struct message *response)
   return true;
 }
 
+static void show_time(uint32_t ntime)
+{
+  if(ntime < 1000)
+    printf("%d ns\n", ntime);
+  else if(ntime < 1000000)
+    printf("%3.3f µs\n", ntime / 1000.);
+  else if(ntime < 1000000000)
+    printf("%3.3f ms\n", ntime / 1000000.);
+  else
+    printf("%3.3f s\n", ntime / 1000000000.);
+}
+
 static bool cmd_respi(int srv, struct message *response)
 {
   switch(current_request) {
@@ -337,10 +349,12 @@ static bool cmd_respi(int srv, struct message *response)
     printf("Nb. error    : %d\n", response->p_int.value);
     break;
   case(CMD_MAXNSEC):
-    printf("Max req time : %d\n", response->p_int.value);
+    printf("Max req time : ");
+    show_time(response->p_int.value);
     break;
   case(CMD_MINNSEC):
-    printf("Min req time : %d\n", response->p_int.value);
+    printf("Min req time : ");
+    show_time(response->p_int.value);
     break;
   case(CMD_SUMNSEC):
     printf("Sum req time : %d\n", response->p_int.value);
