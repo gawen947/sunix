@@ -32,6 +32,7 @@
 #define _GPUSHD_H_
 
 #define MAX_PATH 256
+#define REQUEST_TIMEOUT 1
 
 enum cmd { CMD_QUIT,
            CMD_END,

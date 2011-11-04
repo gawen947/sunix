@@ -1,5 +1,5 @@
 /* File: gpushd-client.c
-   Time-stamp: <2011-10-30 22:50:52 gawen>
+   Time-stamp: <2011-11-04 11:02:59 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -76,6 +76,11 @@ struct opts_name {
   const char *name_long;
   const char *help;
 };
+
+static void srv_timeout(int signum)
+{
+  errx(EXIT_FAILURE, "server timeout");
+}
 
 static void add_request(enum cmd command, const char *path, int code)
 {
@@ -349,6 +354,14 @@ static void client()
   int sd;
   struct request quit       = { .command    = CMD_QUIT };
   struct sockaddr_un s_addr = { .sun_family = AF_UNIX };
+  struct sigaction act      = { .sa_handler = srv_timeout,
+                                .sa_flags   = 0 };
+
+  /* ensure this lient won't live more than REQUEST_TIMEOUT seconds */
+  sigfillset(&act.sa_mask);
+  sigaction(SIGALRM, &act, NULL);
+
+  alarm(REQUEST_TIMEOUT);
 
   /* socket creation */
   sd = xsocket(AF_UNIX, SOCK_STREAM, 0);

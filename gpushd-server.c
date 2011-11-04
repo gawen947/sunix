@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2011-11-04 09:38:47 gawen>
+   Time-stamp: <2011-11-04 10:58:39 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -53,13 +53,13 @@
 
 /*
  * TODO:
+ *  - do not disconnect on recv error
  *  - use a swap capability
  *  - avoid duplicates
  */
 
 #define MAX_CONCURRENCY 16
 #define MAX_STACK       65535
-#define REQUEST_TIMEOUT 1
 
 #define CHECK_BIT(bit, flag) ((flag) & (1 << (bit)))
 #define SET_BIT(bit, flag) ((flag) |= (1 << (bit)))
@@ -386,6 +386,8 @@ static void * new_cli(void *arg)
                              .p_idx = 0 };
   struct sigaction act   = { .sa_handler = cli_timeout,
                              .sa_flags   = 0 };
+
+  printf("CLI: %d - %d\n", idx, pool.fd_cli[idx]);
 
   /* ensure this thread won't live more than REQUEST_TIMEOUT seconds */
   sigfillset(&act.sa_mask);
