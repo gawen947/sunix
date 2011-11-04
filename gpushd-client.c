@@ -1,5 +1,5 @@
 /* File: gpushd-client.c
-   Time-stamp: <2011-11-04 12:22:14 gawen>
+   Time-stamp: <2011-11-04 16:29:33 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -138,6 +138,7 @@ static void cmdline(int argc, char * const argv[], const char *cwd)
              OPT_GET    = 'g',
              OPT_GETALL = 'G',
              OPT_SIZE   = 's',
+             OPT_INFO   = 'i',
              OPT_HELP   = 'h' };
 
   struct opts_name names[] = {
@@ -147,6 +148,7 @@ static void cmdline(int argc, char * const argv[], const char *cwd)
     { 'g', "get",     "Get a directory, without removing it" },
     { 'G', "get-all", "Get and print all directory from the stack" },
     { 's', "size",    "Get the stack size" },
+    { 'i', "info",    "Get informations about the server" },
     { 'h', "help",    "Show this help message" },
     { 0, NULL, NULL }
   };
@@ -158,12 +160,13 @@ static void cmdline(int argc, char * const argv[], const char *cwd)
     { "get",     optional_argument, NULL, OPT_GET },
     { "get-all", no_argument, NULL, OPT_GETALL },
     { "size",    no_argument, NULL, OPT_SIZE },
+    { "info",    no_argument, NULL, OPT_INFO },
     { "help",    no_argument, NULL, OPT_HELP },
     { NULL, 0, NULL, 0 }
   };
 
   while(1) {
-    int c = getopt_long(argc, argv, "p::P::cg::Gsh", opts, NULL);
+    int c = getopt_long(argc, argv, "p::P::cg::Gsih", opts, NULL);
 
     if(c == -1)
       break;
@@ -195,6 +198,16 @@ static void cmdline(int argc, char * const argv[], const char *cwd)
       break;
     case(OPT_SIZE):
       add_request(CMD_SIZE, NULL, 0);
+      break;
+    case(OPT_INFO):
+      add_request(CMD_NBCLI, NULL, 0);
+      add_request(CMD_NBSRV, NULL, 0);
+      add_request(CMD_NBRCV, NULL, 0);
+      add_request(CMD_NBSND, NULL, 0);
+      add_request(CMD_NBERR, NULL, 0);
+      add_request(CMD_MAXNSEC, NULL, 0);
+      add_request(CMD_MINNSEC, NULL, 0);
+      add_request(CMD_SUMNSEC, NULL, 0);
       break;
     case(OPT_HELP):
       exit_status = EXIT_SUCCESS;
@@ -231,6 +244,14 @@ static void proceed_request(int srv, const struct request *request)
   case(CMD_POPF):
   case(CMD_GETF):
   case(CMD_CLEAN):
+  case(CMD_NBCLI):
+  case(CMD_NBSRV):
+  case(CMD_NBRCV):
+  case(CMD_NBSND):
+  case(CMD_NBERR):
+  case(CMD_MAXNSEC):
+  case(CMD_MINNSEC):
+  case(CMD_SUMNSEC):
   case(CMD_SIZE):
   case(CMD_QUIT):
     break;
@@ -253,6 +274,14 @@ static bool cmd_resps(int srv, struct message *response)
   case(CMD_RESPS):
   case(CMD_RESPI):
   case(CMD_SIZE):
+  case(CMD_NBCLI):
+  case(CMD_NBSRV):
+  case(CMD_NBRCV):
+  case(CMD_NBSND):
+  case(CMD_NBERR):
+  case(CMD_MAXNSEC):
+  case(CMD_MINNSEC):
+  case(CMD_SUMNSEC):
     warnx("unexpected string from server");
     send_error(srv, E_INVAL);
     break;
@@ -291,6 +320,30 @@ static bool cmd_respi(int srv, struct message *response)
     break;
   case(CMD_SIZE):
     printf("Stack size : %d\n", response->p_int.value);
+    break;
+  case(CMD_NBCLI):
+    printf("Nb. clients  : %d\n", response->p_int.value);
+    break;
+  case(CMD_NBSRV):
+    printf("Nb. server   : %d\n", response->p_int.value);
+    break;
+  case(CMD_NBRCV):
+    printf("Nb. receive  : %d\n", response->p_int.value);
+    break;
+  case(CMD_NBSND):
+    printf("Nb. send     : %d\n", response->p_int.value);
+    break;
+  case(CMD_NBERR):
+    printf("Nb. error    : %d\n", response->p_int.value);
+    break;
+  case(CMD_MAXNSEC):
+    printf("Max req time : %d\n", response->p_int.value);
+    break;
+  case(CMD_MINNSEC):
+    printf("Min req time : %d\n", response->p_int.value);
+    break;
+  case(CMD_SUMNSEC):
+    printf("Sum req time : %d\n", response->p_int.value);
     break;
   default:
     break;

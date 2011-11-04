@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2011-11-04 15:47:57 gawen>
+   Time-stamp: <2011-11-04 16:14:44 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -522,6 +522,126 @@ static bool cmd_size(int cli, struct message *request)
   return true;
 }
 
+static bool cmd_nbcli(int cli, struct message *request)
+{
+  unsigned int v;
+  char cmd = CMD_RESPI;
+
+  v = stats.nb_cli;
+
+  write(cli, &cmd, sizeof(char));
+  write(cli, &v, sizeof(unsigned int));
+  stats.nb_snd++;
+
+  return true;
+}
+
+static bool cmd_nbsrv(int cli, struct message *request)
+{
+  unsigned int v;
+  char cmd = CMD_RESPI;
+
+  v = stats.nb_srv;
+
+  write(cli, &cmd, sizeof(char));
+  write(cli, &v, sizeof(unsigned int));
+  stats.nb_snd++;
+
+  return true;
+}
+
+static bool cmd_nbrcv(int cli, struct message *request)
+{
+  unsigned int v;
+  char cmd = CMD_RESPI;
+
+  v = stats.nb_rcv;
+
+  write(cli, &cmd, sizeof(char));
+  write(cli, &v, sizeof(unsigned int));
+  stats.nb_snd++;
+
+  return true;
+}
+
+static bool cmd_nbsnd(int cli, struct message *request)
+{
+  unsigned int v;
+  char cmd = CMD_RESPI;
+
+  v = stats.nb_snd;
+
+  write(cli, &cmd, sizeof(char));
+  write(cli, &v, sizeof(unsigned int));
+  stats.nb_snd++;
+
+  return true;
+}
+
+static bool cmd_nberr(int cli, struct message *request)
+{
+  unsigned int v;
+  char cmd = CMD_RESPI;
+
+  v = stats.nb_err;
+
+  write(cli, &cmd, sizeof(char));
+  write(cli, &v, sizeof(unsigned int));
+  stats.nb_snd++;
+
+  return true;
+}
+
+static bool cmd_maxnsec(int cli, struct message *request)
+{
+  unsigned int v;
+  char cmd = CMD_RESPI;
+
+  v = stats.max_nsec;
+
+  write(cli, &cmd, sizeof(char));
+  write(cli, &v, sizeof(unsigned int));
+  stats.nb_snd++;
+
+  return true;
+}
+
+static bool cmd_minnsec(int cli, struct message *request)
+{
+  unsigned int v;
+  char cmd = CMD_RESPI;
+
+  v = stats.min_nsec;
+
+  write(cli, &cmd, sizeof(char));
+  write(cli, &v, sizeof(unsigned int));
+  stats.nb_snd++;
+
+  return true;
+}
+
+static bool cmd_sumnsec(int cli, struct message *request)
+{
+  unsigned int v;
+  char cmd = CMD_RESPI;
+
+
+  v = (stats.sum_nsec & 0xffffff000000LL);
+
+  write(cli, &cmd, sizeof(char));
+  write(cli, &v, sizeof(unsigned int));
+  stats.nb_snd++;
+
+  v = (stats.sum_nsec & 0xffffffLL) >> 32;
+
+  write(cli, &cmd, sizeof(char));
+  write(cli, &v, sizeof(unsigned int));
+  stats.nb_snd++;
+
+  return true;
+}
+
+
 static bool cmd_getall(int cli, struct message *request)
 {
   struct d_node *c = stack.dirs;
@@ -594,6 +714,30 @@ static bool proceed_request(int cli, struct message *request)
     break;
   case(CMD_SIZE):
     result = cmd_size(cli, request);
+    break;
+  case(CMD_NBCLI):
+    result = cmd_nbrcv(cli, request);
+    break;
+  case(CMD_NBSRV):
+    result = cmd_nbsrv(cli, request);
+    break;
+  case(CMD_NBRCV):
+    result = cmd_nbrcv(cli, request);
+    break;
+  case(CMD_NBSND):
+    result = cmd_nbsnd(cli, request);
+    break;
+  case(CMD_NBERR):
+    result = cmd_nberr(cli, request);
+    break;
+  case(CMD_MAXNSEC):
+    result = cmd_maxnsec(cli, request);
+    break;
+  case(CMD_MINNSEC):
+    result = cmd_minnsec(cli, request);
+    break;
+  case(CMD_SUMNSEC):
+    result = cmd_sumnsec(cli, request);
     break;
   default:
     assert(false); /* unknown command */

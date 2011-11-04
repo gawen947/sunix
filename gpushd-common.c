@@ -1,5 +1,5 @@
 /* File: gpushd-common.c
-   Time-stamp: <2011-11-04 12:19:41 gawen>
+   Time-stamp: <2011-11-04 16:29:54 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -124,6 +124,14 @@ bool parse(int remote, struct parse_state *state,
       case(CMD_END):
       case(CMD_QUIT):
       case(CMD_SIZE):
+      case(CMD_NBCLI):
+      case(CMD_NBSRV):
+      case(CMD_NBRCV):
+      case(CMD_NBSND):
+      case(CMD_NBERR):
+      case(CMD_MAXNSEC):
+      case(CMD_MINNSEC):
+      case(CMD_SUMNSEC):
       case(CMD_GETF):
       case(CMD_POPF):
       case(CMD_CLEAN):
