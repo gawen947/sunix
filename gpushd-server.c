@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2011-11-04 12:18:04 gawen>
+   Time-stamp: <2011-11-04 14:11:12 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -28,9 +28,11 @@
    OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
    SUCH DAMAGE. */
 
+#define _BSD_SOURCE 1
 #define _POSIX_SOURCE 1
 
 #include <sys/types.h>
+#include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <semaphore.h>
@@ -45,16 +47,21 @@
 #include <assert.h>
 #include <pthread.h>
 #include <signal.h>
+#include <endian.h>
+#include <fcntl.h>
 #include <err.h>
 
 #include "gpushd-common.h"
 #include "safe-call.h"
 #include "gpushd.h"
 
+enum s_magic {
+  GPUSHD_SWAP_MAGIK1  = 0x48535047, /* GPSH */
+  GPUSHD_SWAP_MAGIK2  = 0x50415753, /* SWAP */
+  GPUSHD_SWAP_VERSION = 0x00000001 };
+
 /*
  * TODO:
- *  - empty error instead of notfound
- *  - do not disconnect on recv error
  *  - use a swap capability
  *  - avoid duplicates
  */
@@ -67,6 +74,7 @@
 #define CLEAR_BIT(bit, flag) ((flag) &= ~(1 << (bit)))
 
 static const char *sock_path;
+static const char *swap_path;
 
 static struct thread_pool {
   sem_t available;
@@ -94,14 +102,104 @@ static struct dir_stack {
   } *dirs;
 } stack;
 
+static void swap_save(const char *swap_file)
+{
+  struct d_node *c = stack.dirs;
+
+  uint32_t magik1  = htole32(GPUSHD_SWAP_MAGIK1);
+  uint32_t magik2  = htole32(GPUSHD_SWAP_MAGIK2);
+  uint32_t version = htole32(GPUSHD_SWAP_VERSION);
+
+  int fd = xopen(swap_file, O_CREAT | O_WRONLY | O_TRUNC,
+                 S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+
+  xwrite(fd, &magik1, sizeof(uint32_t));
+  xwrite(fd, &magik2, sizeof(uint32_t));
+  xwrite(fd, &version, sizeof(uint32_t));
+
+  /* close stack until exit */
+  sem_wait(&stack.mutex);
+
+  for(; c != NULL ; c = c->next) {
+    uint8_t size = strlen(c->d_path);
+    xwrite(fd, &size, sizeof(uint8_t));
+    xwrite(fd, c->d_path, size);
+  }
+
+  close(fd);
+}
+
+static void swap_load(const char *swap_file)
+{
+  uint32_t magik1;
+  uint32_t magik2;
+  uint32_t version;
+
+  int fd = xopen(swap_file, O_RDONLY, 0);
+
+  xread(fd, &magik1, sizeof(uint32_t));
+  xread(fd, &magik2, sizeof(uint32_t));
+  xread(fd, &version, sizeof(uint32_t));
+  magik1  = le32toh(magik1);
+  magik2  = le32toh(magik2);
+  version = le32toh(version);
+
+  if(magik1 != GPUSHD_SWAP_MAGIK1 && magik2 != GPUSHD_SWAP_MAGIK2) {
+    warnx("bad magik number in swap file");
+    return;
+  }
+
+  if(version > GPUSHD_SWAP_VERSION) {
+    warnx("version too high in swap file");
+    return;
+  }
+
+  while(1) {
+    struct d_node *new = xmalloc(sizeof(struct d_node));
+    uint8_t size;
+    size_t n = xread(fd, &size, sizeof(uint8_t));
+
+    if(!n)
+      break;
+
+    n = xread(fd, new->d_path, size);
+    if(n != size)
+      errx(EXIT_FAILURE, "invalid swap file");
+
+    sem_wait(&stack.mutex);
+    {
+      if(stack.size == MAX_STACK) {
+        sem_post(&stack.mutex);
+        warnx("stack full");
+        close(fd);
+        free(new);
+        return;
+      }
+
+      new->next  = stack.dirs;
+      stack.dirs = new;
+      stack.size++;
+    }
+    sem_post(&stack.mutex);
+  }
+
+  close(fd);
+}
+
 static void exit_clean()
 {
   unlink(sock_path);
+
+  /* swap out */
+  if(swap_path)
+    swap_save(swap_path);
+
+  exit(EXIT_SUCCESS);
 }
 
 static void signal_clean(int signum)
 {
-  exit_clean();
+  exit(EXIT_SUCCESS);
 }
 
 static void cli_timeout(int signum)
@@ -441,6 +539,9 @@ static void server(const char *sock_path)
   strncpy(s_addr.sun_path, sock_path, UNIX_PATH_MAX);
   xbind(sd, (struct sockaddr *)&s_addr, SUN_LEN(&s_addr));
 
+  /* now we may register the exit function */
+  atexit(exit_clean);
+
   /* listen and backlog up to eight connections */
   xlisten(sd, 8);
   while(1) {
@@ -496,8 +597,8 @@ int main(int argc, const char *argv[])
   struct sigaction act = { .sa_handler = signal_clean,
                            .sa_flags   = 0 };
 
-  if(argc != 2)
-    errx(EXIT_FAILURE, "usage <socket-path>");
+  if(argc != 2 && argc != 3)
+    errx(EXIT_FAILURE, "usage <socket-path> [swap-path]");
 
   while(n--)
     xsem_init(&pool.clr_done[n], 0, 1);
@@ -517,8 +618,11 @@ int main(int argc, const char *argv[])
   if(pthread_create(&pool.cleaner, NULL, cleaner_thread, NULL))
     err(EXIT_FAILURE, "cannot create thread");
 
-  atexit(exit_clean);
+  if(argc == 3)
+    swap_path = argv[2];
   sock_path = argv[1];
+
+  swap_load(swap_path);
   server(argv[1]);
 
   return EXIT_SUCCESS;

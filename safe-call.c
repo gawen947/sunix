@@ -28,6 +28,7 @@
    OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
    SUCH DAMAGE. */
 
+#include <fcntl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
@@ -94,6 +95,7 @@ SAFE_CALL2(listen, < 0, "listen error", int, int, int)
 
 SAFE_CALL3(read, < 0, "IO read error", ssize_t, int, void *, size_t)
 SAFE_CALL3(write, <= 0, "IO write error", ssize_t, int, const void *, size_t)
+SAFE_CALL3(open, < 0, "cannot open", int, const char *, int, mode_t)
 SAFE_CALL3(chown, < 0, "IO chown error", int, const char *, uid_t, gid_t)
 SAFE_CALL3(socket, < 0, "socket creation error", int, int, int, int)
 SAFE_CALL3(bind, < 0, "bind error", int, int, const struct sockaddr *, socklen_t)

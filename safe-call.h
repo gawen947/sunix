@@ -53,6 +53,7 @@
 int xfork();
 int xpipe(int pipefd[2]);
 int xdup2(int oldfd, int newfd);
+int xopen(const char *path, int flags, mode_t mode);
 char * xgetcwd(char *buf, size_t size);
 void * xmalloc(size_t size);
 void * xrealloc(void *ptr, size_t size);
