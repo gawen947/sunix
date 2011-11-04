@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2011-11-01 03:41:35 gawen>
+   Time-stamp: <2011-11-04 09:38:47 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -53,8 +53,8 @@
 
 /*
  * TODO:
- *  - use a cleaner thread
  *  - use a swap capability
+ *  - avoid duplicates
  */
 
 #define MAX_CONCURRENCY 16
@@ -422,7 +422,7 @@ static void server(const char *sock_path)
   strncpy(s_addr.sun_path, sock_path, UNIX_PATH_MAX);
   xbind(sd, (struct sockaddr *)&s_addr, SUN_LEN(&s_addr));
 
-  /* listen and backlog up to five connections */
+  /* listen and backlog up to eight connections */
   xlisten(sd, 8);
   while(1) {
     int i, fd = xaccept(sd, NULL, NULL);
@@ -450,9 +450,6 @@ static void server(const char *sock_path)
 
 static void * cleaner_thread(void *null)
 {
-  /* this is the default though */
-  pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-
   while(1) {
     int i;
 
