@@ -1,5 +1,5 @@
 /* File: gpushd-client.c
-   Time-stamp: <2011-11-04 16:37:08 gawen>
+   Time-stamp: <2011-11-04 16:42:29 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -357,7 +357,7 @@ static bool cmd_respi(int srv, struct message *response)
     show_time(response->p_int.value);
     break;
   case(CMD_SUMNSEC):
-    printf("Sum req time : %d\n", response->p_int.value);
+    /* disabled for now, doesn't work */
     break;
   default:
     break;

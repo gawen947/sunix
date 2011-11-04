@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2011-11-04 16:14:44 gawen>
+   Time-stamp: <2011-11-04 16:40:46 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -805,8 +805,6 @@ static void server(const char *sock_path)
   int sd;
   struct sockaddr_un s_addr = { .sun_family = AF_UNIX };
 
-  stats.min_nsec = UINT32_MAX;
-
   /* socket creation */
   sd = xsocket(AF_UNIX, SOCK_STREAM, 0);
 
@@ -890,6 +888,8 @@ int main(int argc, const char *argv[])
   sigaction(SIGTERM, &act, NULL);
   sigaction(SIGSTOP, &act, NULL);
   sigaction(SIGINT, &act, NULL);
+
+  stats.min_nsec = UINT32_MAX;
 
   /* start cleaner thread */
   if(pthread_create(&pool.cleaner, NULL, cleaner_thread, NULL))
