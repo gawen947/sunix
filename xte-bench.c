@@ -1,5 +1,5 @@
 /* File: xte-bench.c
-   Time-stamp: <2011-11-27 18:06:49 gawen>
+   Time-stamp: <2011-11-27 18:25:19 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -35,6 +35,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <getopt.h>
 #include <signal.h>
 #include <unistd.h>
@@ -54,12 +55,14 @@ enum t_mode { TM_PROF = 0,
               TM_REAL };
 
 static struct result {
-  volatile unsigned long long sum;
   volatile unsigned long long cur;
-  double time;
   float  interval;
+  double sum;
+  double sq_sum;
+  unsigned long n;
+
   FILE *output;
-} res;
+} res = { .n = 1 };
 
 struct context {
   float interval;
@@ -94,15 +97,25 @@ static void show_time(double speed)
 static void compute(int signum)
 {
   double cur_speed = (double)res.cur / res.interval;
-  double sum_speed = (double)res.sum / res.time;
+  double avg_speed;
+  double mean_dev;
 
-  res.cur   = 0;
-  res.time += res.interval;
+  /* update stats */
+  res.cur     = 0;
+  res.sum    += cur_speed;
+  res.sq_sum += cur_speed * cur_speed;
+  res.n++;
+
+  /* compute avg and mean dev */
+  avg_speed = res.sum / res.n;
+  mean_dev  = sqrt(res.sq_sum / res.n - avg_speed * avg_speed);
 
   fprintf(res.output, "Current ");
   show_time(cur_speed);
   fprintf(res.output, " Average ");
-  show_time(sum_speed);
+  show_time(avg_speed);
+  fprintf(res.output, " +/- ");
+  show_time(mean_dev);
   fprintf(res.output, "\n");
   fflush(res.output);
 }
@@ -111,7 +124,6 @@ static void output(const char *message, size_t len)
 {
   size_t n = write(STDOUT_FILENO, message, len);
   res.cur += n;
-  res.sum += n;
 }
 
 static void put_last_character(char *message, size_t len,

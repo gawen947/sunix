@@ -55,7 +55,7 @@ gpushd-server: safe-call.c safe-call.h gpushd.h gpushd-server.c gpushd-common.c 
 gpushd-client: safe-call.c safe-call.h gpushd.h gpushd-client.c gpushd-common.c gpushd-common.h
 	$(CC) $(CFLAGS) $^ -o $@
 xte-bench: xte-bench.c
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) -lm $^ -o $@
 
 .PHONY : clean install
 
