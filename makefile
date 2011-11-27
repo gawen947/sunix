@@ -22,7 +22,7 @@ ifeq ($(ARCH),x86_64)
 endif
 
 all: true false quickexec autorestart uptime-ng cat echo basename sleep unlink \
-		 yes link args-length gpushd-server gpushd-client
+		 yes link args-length gpushd-server gpushd-client xte-bench
 
 true: true.c common.h
 	$(CC) $(FREE_CFLAGS) $^ -o $@
@@ -54,12 +54,14 @@ gpushd-server: safe-call.c safe-call.h gpushd.h gpushd-server.c gpushd-common.c 
 	$(CC) $(CFLAGS) -pthread -lrt -DUSE_THREAD=1 -DNDEBUG=1 $^ -o $@
 gpushd-client: safe-call.c safe-call.h gpushd.h gpushd-client.c gpushd-common.c gpushd-common.h
 	$(CC) $(CFLAGS) $^ -o $@
+xte-bench: xte-bench.c
+	$(CC) $(CFLAGS) $^ -o $@
 
 .PHONY : clean install
 
 clean:
 	$(RM) true false quickexec autorestart uptime-ng cat echo basename sleep \
-				unlink yes args-length gpushd-server gpushd-client link
+				unlink yes args-length gpushd-server gpushd-client link xte-bench
 
 core-install: all
 	@echo "Installing core files, hope you've backed up coreutils"
@@ -73,6 +75,7 @@ core-install: all
 	$(INSTALL) yes /usr/bin
 
 install: all
+	$(INSTALL) xte-bench $(BIN)
 	$(INSTALL) quickexec $(BIN)
 	$(INSTALL) autorestart $(BIN)
 	$(INSTALL) uptime-ng $(BIN)
