@@ -1,5 +1,5 @@
 /* File: xte-bench.c
-   Time-stamp: <2011-11-27 17:29:21 gawen>
+   Time-stamp: <2011-11-27 18:06:49 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -29,6 +29,8 @@
    SUCH DAMAGE. */
 
 #define _POSIX_SOURCE 1
+
+/* TODO: review average time */
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -75,6 +77,20 @@ struct opts_name {
   const char *help;
 };
 
+static void show_time(double speed)
+{
+  if(speed < 1000)
+    fprintf(res.output, "%3.3g B/s", speed);
+  else if(speed < 1E6)
+    fprintf(res.output, "%3.3g KB/s", speed / 1000.);
+  else if(speed < 1E9)
+    fprintf(res.output, "%3.3g MB/s", speed / 1E6);
+  else if(speed < 1E12)
+    fprintf(res.output, "%3.3g GB/s", speed / 1E9);
+  else
+    fprintf(res.output, "%3.3g TB/s", speed / 1E12);
+}
+
 static void compute(int signum)
 {
   double cur_speed = (double)res.cur / res.interval;
@@ -83,7 +99,12 @@ static void compute(int signum)
   res.cur   = 0;
   res.time += res.interval;
 
-  fprintf(stderr, "Average %g B/s\t\tCurrent %g B/s\n", sum_speed, cur_speed);
+  fprintf(res.output, "Current ");
+  show_time(cur_speed);
+  fprintf(res.output, " Average ");
+  show_time(sum_speed);
+  fprintf(res.output, "\n");
+  fflush(res.output);
 }
 
 static void output(const char *message, size_t len)
@@ -93,23 +114,22 @@ static void output(const char *message, size_t len)
   res.sum += n;
 }
 
-static void put_last_character(char *message, const struct context *ctx)
+static void put_last_character(char *message, size_t len,
+                               const struct context *ctx)
 {
-  size_t position = ctx->size;
-
   switch(ctx->mode) {
   case(M_NEWLINE):
-    message[position++] = '\n';
+    message[len++] = '\n';
     break;
   case(M_CARRIAGE):
-    message[position++] = '\r';
+    message[len++] = '\r';
     break;
   case(M_FILL):
   default:
     break;
   }
 
-  message[position] = '\0';
+  message[len] = '\0';
 }
 
 static void start_bench(const struct context *ctx)
@@ -133,11 +153,12 @@ static void start_bench(const struct context *ctx)
       errx(EXIT_FAILURE, "cannot allocate memory");
 
     for(i = 0 ; i < ctx->size ; i++)
-      message[i] = ('a' + i) % 52;
+      message[i] = 'a' + (i % 26);
 
-    put_last_character(message, ctx);
+    put_last_character(message, ctx->size, ctx);
   }
   else {
+    mlen    = strlen(ctx->message);
     message = malloc(mlen + 2);
 
     if(!message)
@@ -145,13 +166,13 @@ static void start_bench(const struct context *ctx)
 
     strcpy(message, ctx->message);
 
-    put_last_character(message, ctx);
+    put_last_character(message, mlen, ctx);
   }
   mlen = strlen(message);
 
   /* output */
   if(ctx->output) {
-    res.output = fopen(ctx->output, "r");
+    res.output = fopen(ctx->output, "a+");
     if(!res.output)
       err(EXIT_FAILURE, "cannot open output");
   }
@@ -174,6 +195,8 @@ static void start_bench(const struct context *ctx)
 
   sigemptyset(&act.sa_mask);
   sigaction(SIGALRM, &act, NULL);
+  sigaction(SIGVTALRM, &act, NULL);
+  sigaction(SIGPROF, &act, NULL);
 
   /* timer */
   res.interval = ctx->interval;
@@ -241,7 +264,7 @@ static void cmdline(int argc, char * const argv[], struct context *ctx)
     { 'M', "message",   "Specify message" },
     { 'o', "output",    "Result output (default to stderr)" },
     { 'm', "mode",      "Benchmark mode (0=newline,1=carriage-return,2=fill)" },
-    { 't', "time-mode", "Time mode (0=user-sys, 1=user, 2=real)" },
+    { 't', "time-mode", "Time mode (0=prof, 1=user, 2=real)" },
     { 'h', "help",      "Show this help message" },
     { 0, NULL, NULL }
   };
@@ -299,8 +322,9 @@ int main(int argc, char * const argv[])
 {
   struct context ctx = { .interval = 1.,
                          .limit    = 0,
+                         .size     = 64,
                          .mode     = M_NEWLINE,
-                         .t_mode   = TM_PROF,
+                         .t_mode   = TM_REAL,
                          .message  = NULL,
                          .output   = NULL };
 
