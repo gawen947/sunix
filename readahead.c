@@ -1,5 +1,5 @@
 /* File: readahead.c
-   Time-stamp: <2011-12-23 05:05:42 gawen>
+   Time-stamp: <2011-12-23 05:16:04 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -32,6 +32,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -134,15 +135,18 @@ int main(int argc, const char *argv[])
     int i;
 
     for(i = 1 ; i < argc ; i++)
-      ftw(argv[i], read_path, max_open);
+      if(ftw(argv[i], read_path, max_open) < 0)
+        warn("cannot walk into \"%s\"", argv[i]);
   }
   else {
     while(!feof(stdin)) {
       char path[PATH_MAX];
 
       fgets(path, PATH_MAX, stdin);
+      strtok(path, "\n");
 
-      ftw(path, read_path, max_open);
+      if(ftw(path, read_path, max_open) < 0)
+        warn("cannot walk into \"%s\"", path);
     }
   }
 
