@@ -150,6 +150,10 @@ int main(int argc, const char *argv[])
     }
   }
 
+  /* wait for remaining children */
+  while(child--)
+    wait(NULL);
+
   return 0;
 }
 
