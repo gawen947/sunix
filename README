@@ -1,3 +1,25 @@
 true - /bin/true
 false - /bin/false
 scat - similar to /bin/cat
+
+============================
+Summary
+=======
+
+args-length : OK
+autorestart : OK
+basename    : OK
+cat         : Needs rewrite
+echo        : OK
+false       : OK
+true        : OK
+gpushd*     : Needs rewrite
+link        : OK
+quickexec   : Needs valgrind checks
+readahead   : OK
+unlink      : OK
+uptime-ng   : Needs rewrite
+xte-bench   : Needs rewrite
+yes         : OK
+
+tlibc       : Needs rewrite
