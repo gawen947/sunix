@@ -36,6 +36,7 @@
 #include <sys/stat.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include <arpa/inet.h>
 #include <semaphore.h>
 #include <netinet/in.h>
 #include <stdbool.h>
@@ -49,9 +50,14 @@
 #include <assert.h>
 #include <pthread.h>
 #include <signal.h>
-#include <endian.h>
 #include <fcntl.h>
 #include <err.h>
+
+#ifdef __FreeBSD__
+#include <sys/endian.h>
+#else
+#include <endian.h>
+#endif /* __FreeBSD__ */
 
 #include "gpushd-common.h"
 #include "safe-call.h"

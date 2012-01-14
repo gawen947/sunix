@@ -1,4 +1,4 @@
-CC=colorgcc
+CC=gcc
 RM=rm -f
 INSTALL=install
 FREE_CFLAGS=-std=c99 -s -nostdlib -fomit-frame-pointer -O2
