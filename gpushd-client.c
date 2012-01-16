@@ -33,7 +33,6 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/un.h>
-#include <sys/endian.h>
 #include <semaphore.h>
 #include <netinet/in.h>
 #include <stdbool.h>
@@ -52,6 +51,12 @@
 #include "gpushd-common.h"
 #include "safe-call.h"
 #include "gpushd.h"
+
+#ifdef __FreeBSD__
+#include <sys/endian.h>
+#else
+#include <endian.h>
+#endif /* __FreeBSD__ */
 
 #ifndef SUN_LEN
 # define SUN_LEN(ptr) ((size_t) (((struct sockaddr_un *) 0)->sun_path) \
