@@ -22,40 +22,59 @@ ifeq ($(ARCH),x86_64)
 endif
 
 all: true false quickexec autorestart uptime-ng cat echo basename sleep unlink \
-		 yes link args-length gpushd-server gpushd-client xte-bench readahead
+		 yes link args-length gpushd-server gpushd-client xte-bench readahead ln
 
 true: true.c common.h
 	$(CC) $(FREE_CFLAGS) $^ -o $@
+
 false: false.c common.h
 	$(CC) $(FREE_CFLAGS) $^ -o $@
+
 autorestart: autorestart.c
 	$(CC) $(CFLAGS) $^ -o $@
+
 quickexec: quickexec.c
 	$(CC) $(CFLAGS) $^ -o $@
+
 uptime-ng: uptime-ng.c
 	$(CC) $(CFLAGS) $^ -o $@
+
 cat: cat.c $(TLIBC_SRC)
 	$(CC) $(FREE_CFLAGS) $^ -o $@
+
 echo: echo.c $(TLIBC_SRC)
 	$(CC) $(FREE_CFLAGS) $^ -o $@
+
 basename: basename.c $(TLIBC_SRC)
 	$(CC) $(FREE_CFLAGS) $^ -o $@
+
 sleep: sleep.c $(TLIBC_SRC)
 	$(CC) $(FREE_CFLAGS) $^ -o $@
+
 unlink: unlink.c $(TLIBC_SRC)
 	$(CC) $(FREE_CFLAGS) $^ -o $@
+
 yes: yes.c $(TLIBC_SRC)
 	$(CC) $(FREE_CFLAGS) $^ -o $@
+
 link: link.c $(TLIBC_SRC)
 	$(CC) $(FREE_CFLAGS) $^ -o $@
+
 args-length: args-length.c $(TLIBC_SRC)
 	$(CC) $(FREE_CFLAGS) $^ -o $@
+
+ln: ln.c
+	$(CC) $(CFLAGS) $^ -o $@
+
 gpushd-server: safe-call.c safe-call.h gpushd.h gpushd-server.c gpushd-common.c gpushd-common.h
 	$(CC) $(CFLAGS) -pthread -lrt -DUSE_THREAD=1 -DNDEBUG=1 $^ -o $@
+
 gpushd-client: safe-call.c safe-call.h gpushd.h gpushd-client.c gpushd-common.c gpushd-common.h
 	$(CC) $(CFLAGS) $^ -o $@
+
 xte-bench: xte-bench.c
 	$(CC) $(CFLAGS) -lm $^ -o $@
+
 readahead: readahead.c
 	$(CC) $(CFLAGS) $^ -o $@
 
@@ -64,7 +83,7 @@ readahead: readahead.c
 clean:
 	$(RM) true false quickexec autorestart uptime-ng cat echo basename sleep \
 				unlink yes args-length gpushd-server gpushd-client link xte-bench  \
-				readahead
+				readahead ln
 
 core-install: all
 	@echo "Installing core files, hope you've backed up coreutils"
@@ -76,6 +95,7 @@ core-install: all
 	$(INSTALL) sleep /bin
 	$(INSTALL) unlink /usr/bin
 	$(INSTALL) yes /usr/bin
+	$(INSTALL) ln /bin/ln
 
 install: all
 	$(INSTALL) readahead $(BIN)
