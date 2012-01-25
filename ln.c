@@ -1,5 +1,5 @@
 /* File: ln.c
-   Time-stamp: <2012-01-24 02:53:34 gawen>
+   Time-stamp: <2012-01-24 17:18:00 gawen>
 
    Copyright (c) 1987, 1993, 1994
      The Regents of the University of California. All rights reserved.
@@ -43,6 +43,8 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include "bsd.h"
+
 static int fflag; /* Unlink existing files. */
 static int Fflag; /* Remove empty directories also. */
 static int hflag; /* Check new name for symlink first. */
@@ -54,23 +56,11 @@ static int wflag; /* Warn if symlink tqrget does not
                      exist, and -f is not enabled. */
 static char linkch;
 
-static size_t strlcpy(char *dst, const char *src, size_t size)
-{
-  size_t i;
-
-  for(i = 0 ; i < size && src[i] != '\0' ; i++)
-    dst[i] = src[i];
-  dst[i] = '\0';
-
-  return i;
-}
-
 static void usage(void)
 {
   (void)fprintf(stderr, "%s\n%s\n%s\n",
                 "usage: ln [-s [-F] | -L | -P] [-f | -i] [-hnv] source_file [target_file]",
-                "       ln [-s [-F] | -L | -P] [-f | -i] [-hnv] source_file ... target_dir",
-                "       link source_file target_file");
+                "       ln [-s [-F] | -L | -P] [-f | -i] [-hnv] source_file ... target_dir");
   exit(1);
 }
 

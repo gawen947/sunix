@@ -22,7 +22,8 @@ ifeq ($(ARCH),x86_64)
 endif
 
 all: true false quickexec autorestart uptime-ng cat echo basename sleep unlink \
-		 yes link args-length gpushd-server gpushd-client xte-bench readahead ln
+		 yes link args-length gpushd-server gpushd-client xte-bench readahead ln   \
+		 rm
 
 true: true.c common.h
 	$(CC) $(FREE_CFLAGS) $^ -o $@
@@ -63,9 +64,14 @@ link: link.c $(TLIBC_SRC)
 args-length: args-length.c $(TLIBC_SRC)
 	$(CC) $(FREE_CFLAGS) $^ -o $@
 
-ln: ln.c
-	$(CC) $(CFLAGS) $^ -o $@
+# directly ported from bsd base system
+ln: ln.c bsd.c
+	$(CC) $(CFLAGS) -DNO_HTABLE -DNO_STRMODE $^ -o $@
 
+rm: rm.c bsd.c htable.c
+	$(CC) $(CFLAGS) $^ -o $@
+# end of ports 
+#
 gpushd-server: safe-call.c safe-call.h gpushd.h gpushd-server.c gpushd-common.c gpushd-common.h
 	$(CC) $(CFLAGS) -pthread -lrt -DUSE_THREAD=1 -DNDEBUG=1 $^ -o $@
 
@@ -83,7 +89,7 @@ readahead: readahead.c
 clean:
 	$(RM) true false quickexec autorestart uptime-ng cat echo basename sleep \
 				unlink yes args-length gpushd-server gpushd-client link xte-bench  \
-				readahead ln
+				readahead ln rm
 
 core-install: all
 	@echo "Installing core files, hope you've backed up coreutils"
@@ -96,6 +102,7 @@ core-install: all
 	$(INSTALL) unlink /usr/bin
 	$(INSTALL) yes /usr/bin
 	$(INSTALL) ln /bin/ln
+	$(INSTALL) rm /bin/rm
 
 install: all
 	$(INSTALL) readahead $(BIN)
