@@ -13,3 +13,6 @@
 ./debian-uninstall-core-file.sh /bin/mv
 ./debian-uninstall-core-file.sh /bin/ls
 ./debian-uninstall-core-file.sh /bin/cat
+./debian-uninstall-core-file.sh /bin/mkdir
+./debian-uninstall-core-file.sh /usr/bin/test
+./debian-uninstall-core-file.sh /bin/pwd
