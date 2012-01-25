@@ -12,3 +12,4 @@
 ./debian-install-core-file.sh /bin cp
 ./debian-install-core-file.sh /bin mv
 ./debian-install-core-file.sh /bin ls
+./debian-install-core-file.sh /bin cat

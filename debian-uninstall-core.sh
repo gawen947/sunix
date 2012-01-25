@@ -12,3 +12,4 @@
 ./debian-uninstall-core-file.sh /bin/cp
 ./debian-uninstall-core-file.sh /bin/mv
 ./debian-uninstall-core-file.sh /bin/ls
+./debian-uninstall-core-file.sh /bin/cat
