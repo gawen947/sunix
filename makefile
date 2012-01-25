@@ -24,6 +24,7 @@ endif
 all: true false quickexec autorestart uptime-ng cat echo basename sleep unlink \
 		 yes link args-length gpushd-server gpushd-client xte-bench readahead ln   \
 		 rm
+	strip $^
 
 true: true.c common.h
 	$(CC) $(FREE_CFLAGS) $^ -o $@
@@ -71,7 +72,7 @@ ln: ln.c bsd.c
 rm: rm.c bsd.c htable.c
 	$(CC) $(CFLAGS) $^ -o $@
 # end of ports 
-#
+
 gpushd-server: safe-call.c safe-call.h gpushd.h gpushd-server.c gpushd-common.c gpushd-common.h
 	$(CC) $(CFLAGS) -pthread -lrt -DUSE_THREAD=1 -DNDEBUG=1 $^ -o $@
 
@@ -104,6 +105,12 @@ core-install: all
 	$(INSTALL) ln /bin/ln
 	$(INSTALL) rm /bin/rm
 
+debian-install-core: all
+	@sh debian-install-core.sh
+
+debian-uninstall-core: all
+	@sh debian-uninstall-core.sh
+
 install: all
 	$(INSTALL) readahead $(BIN)
 	$(INSTALL) xte-bench $(BIN)
@@ -113,6 +120,3 @@ install: all
 	$(INSTALL) args-length $(BIN)
 	$(INSTALL) gpushd-server $(BIN)
 	$(INSTALL) gpushd-client $(BIN)
-	@echo "The following components should be installed manually"
-	@echo "since they may break base system."
-	@echo "  true, false, cat, echo, basename, sleep, unlink, yes"
