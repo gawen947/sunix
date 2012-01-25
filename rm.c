@@ -65,7 +65,7 @@ static void usage(void);
 
 static void usage(void)
 {
-  (void)fprintf(stderr, "%s\n%s\n",
+  (void)fprintf(stderr, "%s\n",
                 "usage: rm [-f | -i] [-dIPRrv] file ...");
   exit(EX_USAGE);
 }

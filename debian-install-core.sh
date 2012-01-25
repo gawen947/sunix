@@ -9,3 +9,4 @@
 ./debian-install-core-file.sh /usr/bin unlink
 ./debian-install-core-file.sh /bin ln
 ./debian-install-core-file.sh /bin rm
+./debian-install-core-file.sh /bin cp

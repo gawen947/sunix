@@ -1,5 +1,5 @@
 /* File: bsd.h
-   Time-stamp: <2012-01-25 13:56:45 gawen>
+   Time-stamp: <2012-01-25 18:32:07 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.
