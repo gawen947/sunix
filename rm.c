@@ -497,7 +497,6 @@ int main(int argc, char *argv[])
     case 'f':
       fflag = 1;
       iflag = 0;
-      init_id_ht();
       break;
     case 'i':
       fflag = 0;
@@ -521,6 +520,9 @@ int main(int argc, char *argv[])
     }
   argc -= optind;
   argv += optind;
+
+  if(iflag == 0)
+    init_id_ht();
 
   if (argc < 1) {
     if (fflag)

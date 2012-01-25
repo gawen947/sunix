@@ -10,3 +10,4 @@
 ./debian-uninstall-core-file.sh /bin/ln
 ./debian-uninstall-core-file.sh /bin/rm
 ./debian-uninstall-core-file.sh /bin/cp
+./debian-uninstall-core-file.sh /bin/mv

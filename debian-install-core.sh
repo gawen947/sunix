@@ -10,3 +10,4 @@
 ./debian-install-core-file.sh /bin ln
 ./debian-install-core-file.sh /bin rm
 ./debian-install-core-file.sh /bin cp
+./debian-install-core-file.sh /bin mv
