@@ -49,6 +49,7 @@
 #include <langinfo.h>
 #include <limits.h>
 #include <locale.h>
+#include <getopt.h>
 #include <pwd.h>
 #include <time.h>
 #include <stdio.h>
@@ -142,6 +143,7 @@ static int f_reversesort; /* reverse whatever sort is used */
 static int f_sectime;   /* print the real time for all files */
 static int f_singlecol;   /* use single column output */
 static int f_size;    /* list size in short listing */
+static int f_author; /* display author in long form */
 static int f_slash;   /* similar to f_type, but only for dirs */
 static int f_sortacross;  /* sort across rows, not down columns */
 static int f_statustime;  /* use time of last mode change */
@@ -514,9 +516,14 @@ static void printlong(const DISPLAY *dp)
                    dp->s_block, howmany(sp->st_blocks, blocksize));
     strmode(sp->st_mode, buf);
     np = p->fts_pointer;
-    (void)printf("%s %*u %-*s  %-*s  ", buf, dp->s_nlink,
-                 sp->st_nlink, dp->s_user, np->user, dp->s_group,
-                 np->group);
+    if(f_author)
+      (void)printf("%s %*u %s %-*s  %-*s  ", buf, dp->s_nlink,
+                   sp->st_nlink, np->user, dp->s_user, np->user, dp->s_group,
+                   np->group);
+    else
+      (void)printf("%s %*u %-*s  %-*s  ", buf, dp->s_nlink,
+                   sp->st_nlink, dp->s_user, np->user, dp->s_group,
+                   np->group);
     if (S_ISCHR(sp->st_mode) || S_ISBLK(sp->st_mode))
       printdev(dp->s_size, sp->st_rdev);
     else
@@ -993,6 +1000,67 @@ int main(int argc, char *argv[])
   char *bp = tcapbuf;
 #endif
 
+  /* options that does not have a short equivalent */
+  enum opt {
+    OPT_AUTHOR,
+    OPT_BLOCKSIZE,
+    OPT_COLOR,
+    OPT_FILETYPE,
+    OPT_FULLTIME,
+    OPT_GRPDIRFIRST,
+    OPT_SI,
+    OPT_HIDE,
+    OPT_INDICSTYLE,
+    OPT_SHOWCTRLCHAR,
+    OPT_QUOTINGSTYLE,
+    OPT_SORT,
+    OPT_TIME,
+    OPT_TIMESTYLE,
+    OPT_FORMAT
+  };
+
+  struct option opts[] = {
+    { "all", no_argument, NULL, 'a' },
+    { "almost-all", no_argument, NULL, 'A' },
+    { "author", no_argument, NULL, OPT_AUTHOR },
+    { "escape", no_argument, NULL, 'b' },
+    { "block-size", required_argument, NULL, OPT_BLOCKSIZE },
+    { "ignore-backups", no_argument, NULL, 'B' },
+    { "color", required_argument, NULL, OPT_COLOR },
+    { "directory", no_argument, NULL, 'd' },
+    { "dired", no_argument, NULL, 'D' },
+    { "classify", no_argument, NULL, 'F' },
+    { "file-type", no_argument, NULL, OPT_FILETYPE },
+    { "format", required_argument, NULL, OPT_FORMAT },
+    { "full-time", no_argument, NULL, OPT_FULLTIME },
+    { "group-directories-first", no_argument, NULL, OPT_GRPDIRFIRST },
+    { "no-group", no_argument, NULL, 'G' },
+    { "human-readable", no_argument, NULL, 'h' },
+    { "si", no_argument, NULL, OPT_SI },
+    { "dereference-command-line", no_argument, NULL, 'H' },
+    { "hide", required_argument, NULL, OPT_HIDE },
+    { "indicator-style", required_argument, NULL, OPT_INDICSTYLE },
+    { "inode", no_argument, NULL, 'i' },
+    { "ignore", required_argument, NULL, 'I' },
+    { "dereference", no_argument, NULL, 'L' },
+    { "numeric-uid-gid", no_argument, NULL, 'n' },
+    { "literal", no_argument, NULL, 'N' },
+    { "hide-control-chars", no_argument, NULL, 'q' },
+    { "show-control-chars", no_argument, NULL, OPT_SHOWCTRLCHAR },
+    { "quote-name", no_argument, NULL, 'Q' },
+    { "quoting-style", no_argument, NULL, OPT_QUOTINGSTYLE },
+    { "reverse", no_argument, NULL, 'r' },
+    { "recursive", no_argument, NULL, 'R' },
+    { "size", no_argument, NULL, 's' },
+    { "sort", required_argument, NULL, OPT_SORT },
+    { "time", required_argument, NULL, OPT_TIME },
+    { "time-style", required_argument, NULL, OPT_TIMESTYLE },
+    { "tabsize", required_argument, NULL, 'T' },
+    { "width", required_argument, NULL, 'w' },
+    { NULL, 0, NULL, 0 }
+  };
+
+  /* we really need locales here */
   (void)setlocale(LC_ALL, "");
 
   /* Terminal defaults to -Cq, non-terminal defaults to -1. */
@@ -1013,13 +1081,17 @@ int main(int argc, char *argv[])
   }
 
   fts_options = FTS_PHYSICAL;
-  while ((ch = getopt(argc, argv,
-                      "1ABCD:FGHILPRSTUWZabcdfghiklmnpqrstuwx")) != -1) {
+  while ((ch = getopt_long(argc, argv,
+                           "aAbBcCdDfFgGhHiI:klLmnNop:qQrRsStT:uUvw:xXZ",
+                           opts, NULL)) != -1) {
     switch (ch) {
       /*
        * The -1, -C, -x and -l options all override each other so
        * shell aliasing works right.
        */
+    case OPT_AUTHOR:
+      f_author = 1;
+      break;
     case '1':
       f_singlecol = 1;
       f_longform = 0;
@@ -1162,7 +1234,6 @@ int main(int argc, char *argv[])
       f_octal_escape = 0;
       break;
     default:
-    case '?':
       usage();
     }
   }
