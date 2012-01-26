@@ -76,8 +76,7 @@ static void  dumpmode(BITCMD *);
  * Note that there is no '=' command; a strict assignment is just a '-' (clear
  * bits) followed by a '+' (set bits).
  */
-mode_t
-getmode(const void *bbox, mode_t omode)
+static mode_t getmode(const void *bbox, mode_t omode)
 {
   const BITCMD *set;
   mode_t clrval, newmode, value;
@@ -163,8 +162,7 @@ getmode(const void *bbox, mode_t omode)
 
 #define STANDARD_BITS (S_ISUID|S_ISGID|S_IRWXU|S_IRWXG|S_IRWXO)
 
-void *
-setmode(const char *p)
+static void * setmode(const char *p)
 {
   int perm, who;
   char op, *ep;
@@ -324,8 +322,7 @@ setmode(const char *p)
   return (saveset);
 }
 
-static BITCMD *
-addcmd(BITCMD *set, int op, int who, int oparg, u_int mask)
+static BITCMD * addcmd(BITCMD *set, int op, int who, int oparg, u_int mask)
 {
   switch (op) {
   case '=':
@@ -368,8 +365,7 @@ addcmd(BITCMD *set, int op, int who, int oparg, u_int mask)
 }
 
 #ifdef SETMODE_DEBUG
-static void
-dumpmode(BITCMD *set)
+static void dumpmode(BITCMD *set)
 {
   for (; set->cmd; ++set)
     (void)printf("cmd: '%c' bits %04o%s%s%s%s%s%s\n",
@@ -388,8 +384,7 @@ dumpmode(BITCMD *set)
  * 'g' and 'o' commands continue to be separate.  They could probably be
  * compacted, but it's not worth the effort.
  */
-static void
-compress_mode(BITCMD *set)
+static void compress_mode(BITCMD *set)
 {
   BITCMD *nset;
   int setbits, clrbits, Xbits, op;
@@ -444,9 +439,17 @@ int main(int argc, char *argv[])
   void *set = NULL;
   char *mode;
 
+  struct option opts[] = {
+    { "mode", required_argument, NULL, 'm' },
+    { "parents", no_argument, NULL, 'p' },
+    { "verbose", no_argument, NULL, 'v' },
+    { "context", required_argument, NULL, 'Z' },
+    { NULL, 0, NULL, 0 }
+  };
+
   omode = pflag = 0;
   mode = NULL;
-  while ((ch = getopt(argc, argv, "m:pv")) != -1)
+  while ((ch = getopt_long(argc, argv, "m:pvZ:", opts, NULL)) != -1)
     switch(ch) {
     case 'm':
       mode = optarg;
@@ -457,7 +460,9 @@ int main(int argc, char *argv[])
     case 'v':
       vflag = 1;
       break;
-    case '?':
+    case 'Z':
+      warnx("SELinux not implemented");
+      break;
     default:
       usage();
     }
