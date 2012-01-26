@@ -16,3 +16,4 @@
 ./debian-install-core-file.sh /bin mkdir
 ./debian-install-core-file.sh /usr/bin test
 ./debian-install-core-file.sh /bin pwd
+./debian-install-core-file.sh /bin kill

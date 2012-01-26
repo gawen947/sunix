@@ -16,3 +16,4 @@
 ./debian-uninstall-core-file.sh /bin/mkdir
 ./debian-uninstall-core-file.sh /usr/bin/test
 ./debian-uninstall-core-file.sh /bin/pwd
+./debian-uninstall-core-file.sh /bin/kill
