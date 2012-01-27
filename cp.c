@@ -55,6 +55,7 @@
 
 #include <err.h>
 #include <errno.h>
+#include <getopt.h>
 #include <fts.h>
 #include <limits.h>
 #include <fcntl.h>
@@ -424,7 +425,7 @@ int main(int argc, char *argv[])
 
   fts_options = FTS_NOCHDIR | FTS_PHYSICAL;
   Hflag = Lflag = Pflag = 0;
-  while ((ch = getopt(argc, argv, "HLPRafilnprvx")) != -1)
+  while ((ch = getopt_long(argc, argv, "HLPRafilnprvx", NULL, NULL)) != -1)
     switch (ch) {
     case 'H':
       Hflag = 1;
