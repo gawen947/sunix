@@ -95,7 +95,7 @@ int main(int argc, char *argv[])
   int ch;
   char path[PATH_MAX];
 
-  while ((ch = getopt(argc, argv, "finv")) != -1)
+  while ((ch = getopt_long(argc, argv, "finv", NULL, NULL)) != -1)
     switch (ch) {
     case 'i':
       iflg = 1;
