@@ -1060,10 +1060,15 @@ int main(int argc, char *argv[])
   char *bp = tcapbuf;
 #endif
 
+  enum {
+    HIDE_OPTION
+  };
+
   struct option opts[] = {
     { "quote-name", no_argument, NULL, 'Q' },
     { "ignore", required_argument, NULL, 'I' },
     { "ignore-backups", no_argument, NULL, 'B' },
+    { "hide", required_argument, NULL, HIDE_OPTION },
     { NULL, 0, NULL, 0 }
   };
 
@@ -1133,6 +1138,16 @@ int main(int argc, char *argv[])
       f_statustime = 1;
       f_accesstime = 0;
       break;
+    case HIDE_OPTION:
+    {
+      struct ignore_pattern *hide = malloc (sizeof *hide);
+      if(!hide)
+        err(1, "malloc");
+      hide->pattern = optarg;
+      hide->next = hide_patterns;
+      hide_patterns = hide;
+    }
+    break;
     case 'u':
       f_accesstime = 1;
       f_statustime = 0;
