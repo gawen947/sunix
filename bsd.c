@@ -35,6 +35,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <grp.h>
@@ -168,6 +169,15 @@ static void *retrieve_user(const void *key, void *optarg)
   uintptr_t uid = (uintptr_t)key;
   struct passwd *u_uid = getpwuid(uid);
 
+  /* In case something goes wrong we use the uid as name */
+  if(!u_uid) {
+    char *str = malloc(32);
+    if(!str)
+      err(1, "malloc");
+    (void)sprintf(str, "%d", uid);
+    return str;
+  }
+
   return strdup(u_uid->pw_name);
 }
 
@@ -175,6 +185,15 @@ static void *retrieve_group(const void *key, void *optarg)
 {
   uintptr_t gid = (uintptr_t)key;
   struct group *g_gid = getgrgid(gid);
+
+  /* In case something goes wrong we use the gid as name */
+  if(!g_gid) {
+    char *str = malloc(32);
+    if(!str)
+      err(1, "malloc");
+    (void)sprintf(str, "%d", gid);
+    return str;
+  }
 
   return strdup(g_gid->gr_name);
 }
