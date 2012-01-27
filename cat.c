@@ -83,7 +83,7 @@ int main(int argc, char *argv[])
 
   setlocale(LC_CTYPE, "");
 
-  while ((ch = getopt(argc, argv, "benstuv")) != -1)
+  while ((ch = getopt_long(argc, argv, "benstuv", NULL, NULL)) != -1)
     switch (ch) {
     case 'b':
       bflag = nflag = 1;  /* -b implies -n */
