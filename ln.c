@@ -231,7 +231,7 @@ int main(int argc, char *argv[])
   char *p, *targetdir;
   int ch, exitval;
 
-  while ((ch = getopt(argc, argv, "FLPfhinsvw")) != -1)
+  while ((ch = getopt_long(argc, argv, "FLPfhinsvw", NULL, NULL)) != -1)
     switch (ch) {
     case 'F':
       Fflag = 1;
