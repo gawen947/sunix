@@ -50,11 +50,14 @@
 #include <limits.h>
 #include <locale.h>
 #include <pwd.h>
+#include <getopt.h>
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <fnmatch.h>
+#include <stdbool.h>
 #ifdef COLORLS
 #include <termcap.h>
 #include <signal.h>
@@ -65,6 +68,11 @@
 #define NO_PRINT  1
 
 #define HUMANVALSTR_LEN 10
+
+struct ignore_pattern {
+    const char *pattern;
+    struct ignore_pattern *next;
+};
 
 typedef struct {
   FTSENT *list;
@@ -121,6 +129,11 @@ static int (*sortfcn)(const FTSENT *, const FTSENT *);
 long blocksize;     /* block size units */
 int termwidth = 80;   /* default terminal width */
 
+static int ignore_mode;
+
+static struct ignore_pattern *ignore_patterns;
+static struct ignore_pattern *hide_patterns;
+
 /* flags */
 static int f_accesstime;  /* use time of last access */
 static int f_humanval;    /* show human-readable file sizes */
@@ -141,6 +154,8 @@ static int f_recursive;   /* ls subdirectories also */
 static int f_reversesort; /* reverse whatever sort is used */
 static int f_sectime;   /* print the real time for all files */
 static int f_singlecol;   /* use single column output */
+static int f_quote; /* quote name */
+static int f_ignore; /* ignore motif activated */
 static int f_size;    /* list size in short listing */
 static int f_slash;   /* similar to f_type, but only for dirs */
 static int f_sortacross;  /* sort across rows, not down columns */
@@ -162,6 +177,18 @@ static char *enter_bold;   /* ANSI sequence to set color to bold mode */
 #endif
 
 static int rval;
+
+enum ignore_modes {
+  /* Ignore files whose names start with `.', and files specified by
+     --hide and --ignore.  */
+  IGN_DEFAULT = 0,
+
+  /* Ignore `.', `..', and files specified by --ignore.  */
+  IGN_DOT_AND_DOTDOT,
+
+  /* Ignore only files specified by --ignore.  */
+  IGN_MINIMAL
+};
 
 static int prn_normal(const char *s)
 {
@@ -480,6 +507,14 @@ static void printscol(const DISPLAY *dp)
  */
 static int printname(const char *name)
 {
+  char buf[256];
+
+  /* Q option */
+  if(f_quote) {
+    sprintf(buf, "\"%s\"", name);
+    name = buf;
+  }
+
   if (f_octal || f_octal_escape)
     return prn_octal(name);
   else if (f_nonprint)
@@ -973,12 +1008,44 @@ static void usage(void)
 {
   (void)fprintf(stderr,
 #ifdef COLORLS
-                "usage: ls [-ABCFGHILPRSTUWabcdfghiklmnpqrstuwx1] [-D format]"
+                "usage: ls [-ABCFGHIJLPQRSTUWabcdfghiklmnpqrstuwx1] [-D format]"
 #else
-                "usage: ls [-ABCFHILPRSTUWZabcdfghiklmnpqrstuwx1] [-D format]"
+                "usage: ls [-ABCFHIJLPQRSTUWZabcdfghiklmnpqrstuwx1] [-D format]"
 #endif
                 " [file ...]\n");
   exit(1);
+}
+
+static void add_ignore_pattern (const char *pattern)
+{
+  struct ignore_pattern *ignore;
+
+  if((ignore = malloc (sizeof *ignore)) == NULL)
+    err(1, "malloc");
+
+  ignore->pattern = pattern;
+  /* Add it to the head of the linked list.  */
+  ignore->next = ignore_patterns;
+  ignore_patterns = ignore;
+}
+
+static bool patterns_match (struct ignore_pattern const *patterns, char const *file)
+{
+  struct ignore_pattern const *p;
+  for (p = patterns; p; p = p->next)
+    if (fnmatch (p->pattern, file, FNM_PERIOD) == 0)
+      return true;
+  return false;
+}
+
+static bool file_ignored(const char *name)
+{
+  return ((ignore_mode != IGN_MINIMAL
+           && name[0] == '.'
+           && (ignore_mode == IGN_DEFAULT || ! name[1 + (name[1] == '.')]))
+          || (ignore_mode == IGN_DEFAULT
+              && patterns_match(hide_patterns, name))
+          || patterns_match(ignore_patterns, name));
 }
 
 int main(int argc, char *argv[])
@@ -992,6 +1059,12 @@ int main(int argc, char *argv[])
   char tcapbuf[512];  /* capability buffer */
   char *bp = tcapbuf;
 #endif
+
+  struct option opts[] = {
+    { "quote-name", no_argument, NULL, 'Q' },
+    { "ignore", required_argument, NULL, 'I' },
+    { NULL, 0, NULL, 0 }
+  };
 
   (void)setlocale(LC_ALL, "");
 
@@ -1013,8 +1086,8 @@ int main(int argc, char *argv[])
   }
 
   fts_options = FTS_PHYSICAL;
-  while ((ch = getopt(argc, argv,
-                      "1ABCD:FGHILPRSTUWZabcdfghiklmnpqrstuwx")) != -1) {
+  while ((ch = getopt_long(argc, argv,
+                           "1ABCD:FGHI:JLPQRSTUWZabcdfghiklmnpqrstuwx", opts, NULL)) != -1) {
     switch (ch) {
       /*
        * The -1, -C, -x and -l options all override each other so
@@ -1040,6 +1113,10 @@ int main(int argc, char *argv[])
       f_longform = 1;
       f_singlecol = 0;
       f_stream = 0;
+      break;
+    case 'I':
+      f_ignore = 1;
+      add_ignore_pattern(optarg);
       break;
     case 'x':
       f_sortacross = 1;
@@ -1067,6 +1144,9 @@ int main(int argc, char *argv[])
       fts_options |= FTS_COMFOLLOW;
       f_nofollow = 0;
       break;
+    case 'Q':
+      f_quote = 1;
+      break;
     case 'G':
       setenv("CLICOLOR", "", 1);
       break;
@@ -1085,12 +1165,16 @@ int main(int argc, char *argv[])
       f_recursive = 1;
       break;
     case 'a':
+      ignore_mode = IGN_MINIMAL;
       fts_options |= FTS_SEEDOT;
       /* FALLTHROUGH */
     case 'A':
+      if(ignore_mode == IGN_DEFAULT)
+        ignore_mode = IGN_DOT_AND_DOTDOT;
+
       f_listdot = 1;
       break;
-    case 'I':
+    case 'J':
       f_noautodot = 1;
       break;
       /* The -d option turns off the -R option. */
@@ -1099,6 +1183,7 @@ int main(int argc, char *argv[])
       f_recursive = 0;
       break;
     case 'f':
+      ignore_mode = IGN_MINIMAL;
       f_nosort = 1;
       break;
     case 'g': /* Compatibility with 4.3BSD. */
@@ -1330,7 +1415,7 @@ static void traverse(int argc, char *argv[], int options)
   ch_options = !f_recursive &&
     options & FTS_NOSTAT ? FTS_NAMEONLY : 0;
 
-  while ((p = fts_read(ftsp)) != NULL)
+  while ((p = fts_read(ftsp)) != NULL) {
     switch (p->fts_info) {
     case FTS_DC:
       warnx("%s: directory causes a cycle", p->fts_name);
@@ -1368,6 +1453,7 @@ static void traverse(int argc, char *argv[], int options)
     default:
       break;
     }
+  }
   if (errno)
     err(1, "fts_read");
 }
@@ -1483,6 +1569,9 @@ static void display(const FTSENT *p, FTSENT *list, int options)
   sizelen = 0;
   flags = NULL;
   for (cur = list, entries = 0; cur; cur = cur->fts_link) {
+    if(file_ignored(cur->fts_name))
+      cur->fts_number = NO_PRINT;
+
     if (cur->fts_info == FTS_ERR || cur->fts_info == FTS_NS) {
       warnx("%s: %s",
             cur->fts_name, strerror(cur->fts_errno));
