@@ -31,7 +31,8 @@
 #ifndef _BSD_H_
 #define _BSD_H_
 
-#define MAXPHYS (512 * 1024)
+/* #define MAXPHYS (512 * 1024) */
+#define MAXPHYS (1024 * 1024 * 64)
 
 size_t strlcpy(char *dst, const char *src, size_t size);
 void strmode(mode_t mode, char *bp);
