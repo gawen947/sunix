@@ -23,7 +23,7 @@ endif
 
 all: true false quickexec autorestart uptime-ng cat echo basename sleep unlink \
 		 yes link args-length gpushd-server gpushd-client xte-bench readahead ln   \
-		 rm cp mv ls cat mkdir test pwd kill
+		 rm cp mv ls cat mkdir test pwd kill par
 	strip $^
 
 true: true.c common.h
@@ -106,12 +106,15 @@ xte-bench: xte-bench.c
 readahead: readahead.c
 	$(CC) $(CFLAGS) $^ -o $@
 
+par: par.c
+	$(CC) $(CFLAGS) $^ -o $@
+
 .PHONY : clean install
 
 clean:
 	$(RM) true false quickexec autorestart uptime-ng cat echo basename sleep \
 				unlink yes args-length gpushd-server gpushd-client link xte-bench  \
-				readahead ln rm cp mv ls cat mkdir test pwd kill
+				readahead ln rm cp mv ls cat mkdir test pwd kill par
 
 core-install: all
 	@echo "Installing core files, hope you've backed up coreutils"
@@ -141,6 +144,7 @@ debian-uninstall-core: all
 	@sh debian-uninstall-core.sh
 
 install: all
+	$(INSTALL) par $(BIN)
 	$(INSTALL) readahead $(BIN)
 	$(INSTALL) xte-bench $(BIN)
 	$(INSTALL) quickexec $(BIN)

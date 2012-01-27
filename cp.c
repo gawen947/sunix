@@ -100,8 +100,6 @@ static void usage(void);
 
 #define cp_pct(x, y)  ((y == 0) ? 0 : (int)(100.0 * (x) / (y)))
 
-#define MAXPHYS (512 * 1024)
-
 /* Memory strategy threshold, in pages: if physmem is larger then this, use a
  * large buffer */
 #define PHYSPAGES_THRESHOLD (32*1024)
@@ -408,7 +406,6 @@ static int setfile(struct stat *fs, int fd)
 
 static void usage(void)
 {
-
   (void)fprintf(stderr, "%s\n%s\n",
                 "usage: cp [-R [-H | -L | -P]] [-f | -i | -n] [-alpvx] source_file target_file",
                 "       cp [-R [-H | -L | -P]] [-f | -i | -n] [-alpvx] source_file ... "

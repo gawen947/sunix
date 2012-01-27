@@ -1038,10 +1038,18 @@ static bool patterns_match (struct ignore_pattern const *patterns, char const *f
   return false;
 }
 
+static bool dotdot(const char *name)
+{
+  if(name[0] != '\0' && name[0] == '.' &&
+     (name[1] == '\0' || (name[1] == '.' && name[2] == '\0')))
+    return true;
+  return false;
+}
+
 static bool file_ignored(const char *name)
 {
   return ((ignore_mode != IGN_MINIMAL
-           && name[0] == '.'
+           && dotdot(name)
            && (ignore_mode == IGN_DEFAULT || ! name[1 + (name[1] == '.')]))
           || (ignore_mode == IGN_DEFAULT
               && patterns_match(hide_patterns, name))
