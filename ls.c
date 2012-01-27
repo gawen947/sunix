@@ -1008,9 +1008,9 @@ static void usage(void)
 {
   (void)fprintf(stderr,
 #ifdef COLORLS
-                "usage: ls [-ABCFGHIJLPQRSTUWabcdfghiklmnpqrstuwx1] [-D format]"
+                "usage: ls [-ABCFGHIJKLPQRSTUWabcdfghiklmnpqrstuwx1] [-D format]"
 #else
-                "usage: ls [-ABCFHIJLPQRSTUWZabcdfghiklmnpqrstuwx1] [-D format]"
+                "usage: ls [-ABCFHIJKLPQRSTUWZabcdfghiklmnpqrstuwx1] [-D format]"
 #endif
                 " [file ...]\n");
   exit(1);
@@ -1063,6 +1063,7 @@ int main(int argc, char *argv[])
   struct option opts[] = {
     { "quote-name", no_argument, NULL, 'Q' },
     { "ignore", required_argument, NULL, 'I' },
+    { "ignore-backups", no_argument, NULL, 'B' },
     { NULL, 0, NULL, 0 }
   };
 
@@ -1087,7 +1088,7 @@ int main(int argc, char *argv[])
 
   fts_options = FTS_PHYSICAL;
   while ((ch = getopt_long(argc, argv,
-                           "1ABCD:FGHI:JLPQRSTUWZabcdfghiklmnpqrstuwx", opts, NULL)) != -1) {
+                           "1ABCD:FGHI:JKLPQRSTUWZabcdfghiklmnpqrstuwx", opts, NULL)) != -1) {
     switch (ch) {
       /*
        * The -1, -C, -x and -l options all override each other so
@@ -1099,6 +1100,10 @@ int main(int argc, char *argv[])
       f_stream = 0;
       break;
     case 'B':
+      add_ignore_pattern ("*~");
+      add_ignore_pattern (".*~");
+      break;
+    case 'K':
       f_nonprint = 0;
       f_octal = 1;
       f_octal_escape = 0;
