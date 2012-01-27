@@ -36,6 +36,7 @@
 
 #include <err.h>
 #include <signal.h>
+#include <getopt.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <fts.h>
@@ -489,7 +490,7 @@ int main(int argc, char *argv[])
   }
 
   Pflag = rflag = 0;
-  while ((ch = getopt(argc, argv, "dfiIPRrv")) != -1)
+  while ((ch = getopt_long(argc, argv, "dfiIPRrv", NULL, NULL)) != -1)
     switch(ch) {
     case 'd':
       dflag = 1;
