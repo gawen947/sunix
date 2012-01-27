@@ -76,7 +76,7 @@ mv: mv.c bsd.c htable.c
 	$(CC) $(CFLAGS) $^ -o $@
 
 ls: ls.c bsd.c htable.c
-	$(CC) $(CFLAGS) $^ -DCOLORLS -lncurses -o $@
+	$(CC) $(CFLAGS) $^ -DCOLORLS -ltinfo -o $@
 
 cat: cat.c bsd.c
 	$(CC) $(CFLAGS) -DNO_HTABLE -DNO_STRMODE $^ -o $@
