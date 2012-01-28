@@ -1,5 +1,5 @@
 /* File: bsd.h
-   Time-stamp: <2012-01-25 18:32:07 gawen>
+   Time-stamp: <2012-01-28 02:35:36 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -42,5 +42,9 @@ void free_uid_ht(void);
 void free_gid_ht(void);
 const char *user_from_uid(uid_t uid, int nouser);
 const char *group_from_gid(gid_t gid, int nogroup);
-
+mode_t getmode(const void *bbox, mode_t omode);
+void * setmode(const char *p);
+# ifdef SETMODE_DEBUG
+void dumpmode(BITCMD *set);
+# endif
 #endif /* _BSD_H_ */

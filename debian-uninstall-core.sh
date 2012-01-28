@@ -17,3 +17,4 @@
 ./debian-uninstall-core-file.sh /usr/bin/test
 ./debian-uninstall-core-file.sh /bin/pwd
 ./debian-uninstall-core-file.sh /bin/kill
+./debian-uninstall-core-file.sh /bin/chmod

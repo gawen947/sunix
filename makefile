@@ -23,7 +23,7 @@ endif
 
 all: true false quickexec autorestart uptime-ng cat echo basename sleep unlink \
 		 yes link args-length gpushd-server gpushd-client xte-bench readahead ln   \
-		 rm cp mv ls cat mkdir test pwd kill par
+		 rm cp mv ls cat mkdir test pwd kill par chmod
 	strip $^
 
 true: true.c common.h
@@ -64,25 +64,25 @@ args-length: args-length.c $(TLIBC_SRC)
 
 # directly ported from bsd base system
 ln: ln.c bsd.c
-	$(CC) $(CFLAGS) -DNO_HTABLE -DNO_STRMODE $^ -o $@
+	$(CC) $(CFLAGS) -DNO_HTABLE -DNO_STRMODE -DNO_SETMODE $^ -o $@
 
 rm: rm.c bsd.c htable.c
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) -DNO_SETMODE $^ -o $@
 
 cp: cp.c bsd.c
-	$(CC) $(CFLAGS) -DNO_HTABLE -DNO_STRMODE $^ -o $@
+	$(CC) $(CFLAGS) -DNO_HTABLE -DNO_STRMODE -DNO_SETMODE $^ -o $@
 
 mv: mv.c bsd.c htable.c
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ -DNO_SETMODE -o $@
 
 ls: ls.c bsd.c htable.c
-	$(CC) $(CFLAGS) $^ -DCOLORLS -ltinfo -o $@
+	$(CC) $(CFLAGS) $^ -DCOLORLS -DNO_SETMODE -ltinfo -o $@
 
 cat: cat.c bsd.c
-	$(CC) $(CFLAGS) -DNO_HTABLE -DNO_STRMODE $^ -o $@
+	$(CC) $(CFLAGS) -DNO_HTABLE -DNO_STRMODE -DNO_SETMODE $^ -o $@
 
-mkdir: mkdir.c
-	$(CC) $(CFLAGS) $^ -o $@
+mkdir: mkdir.c bsd.c
+	$(CC) $(CFLAGS) $^ -DNO_HTABLE -DNO_STRMODE -o $@
 
 test: test.c
 	$(CC) $(CFLAGS) $^ -o $@
@@ -92,6 +92,9 @@ pwd: pwd.c
 
 kill: kill.c
 	$(CC) $(CFLAGS) $^ -o $@
+
+chmod: chmod.c bsd.c
+	$(CC) $(CFLAGS) -DNO_HTABLE -DNO_STRMODE $^ -o $@
 # end of bsd ports 
 
 gpushd-server: safe-call.c safe-call.h gpushd.h gpushd-server.c gpushd-common.c gpushd-common.h
@@ -114,7 +117,7 @@ par: par.c
 clean:
 	$(RM) true false quickexec autorestart uptime-ng cat echo basename sleep \
 				unlink yes args-length gpushd-server gpushd-client link xte-bench  \
-				readahead ln rm cp mv ls cat mkdir test pwd kill par
+				readahead ln rm cp mv ls cat mkdir test pwd kill par chmod
 
 core-install: all
 	@echo "Installing core files, hope you've backed up coreutils"
@@ -136,6 +139,7 @@ core-install: all
 	$(INSTALL) test /usr/bin
 	$(INSTALL) pwd /bin
 	$(INSTALL) kill /bin
+	$(INSTALL) chmod /bin
 
 debian-install-core: all
 	@sh debian-install-core.sh
