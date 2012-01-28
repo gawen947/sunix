@@ -153,7 +153,7 @@ core-install: all
 debian-install-core: all
 	@sh debian-install-core.sh
 
-debian-uninstall-core: all
+debian-uninstall-core:
 	@sh debian-uninstall-core.sh
 
 install: all
