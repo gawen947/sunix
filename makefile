@@ -23,7 +23,7 @@ endif
 
 all: true false quickexec autorestart uptime-ng cat echo basename sleep unlink \
 		 yes link args-length gpushd-server gpushd-client xte-bench readahead ln   \
-		 rm cp mv ls cat mkdir test pwd kill par chmod
+		 rm cp mv ls cat mkdir test pwd kill par chmod seq
 	strip $^
 
 true: true.c common.h
@@ -95,6 +95,9 @@ kill: kill.c
 
 chmod: chmod.c bsd.c
 	$(CC) $(CFLAGS) -DNO_HTABLE $^ -o $@
+
+seq: seq.c
+	$(CC) $(CFLAGS) -lm $^ -o $@
 # end of bsd ports 
 
 gpushd-server: safe-call.c safe-call.h gpushd.h gpushd-server.c gpushd-common.c gpushd-common.h
@@ -117,7 +120,7 @@ par: par.c
 clean:
 	$(RM) true false quickexec autorestart uptime-ng cat echo basename sleep \
 				unlink yes args-length gpushd-server gpushd-client link xte-bench  \
-				readahead ln rm cp mv ls cat mkdir test pwd kill par chmod
+				readahead ln rm cp mv ls cat mkdir test pwd kill par chmod seq
 
 core-install: all
 	@echo "Installing core files, hope you've backed up coreutils"
@@ -140,6 +143,7 @@ core-install: all
 	$(INSTALL) pwd /bin
 	$(INSTALL) kill /bin
 	$(INSTALL) chmod /bin
+	$(INSTALL) seq /usr/bin
 
 debian-install-core: all
 	@sh debian-install-core.sh
