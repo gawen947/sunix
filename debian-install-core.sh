@@ -19,3 +19,4 @@
 ./debian-install-core-file.sh /bin kill
 ./debian-install-core-file.sh /bin chmod
 ./debian-install-core-file.sh /usr/bin seq
+./debian-install-core-file.sh /usr/bin clear
