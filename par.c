@@ -1,5 +1,5 @@
 /* File: par.c
-   Time-stamp: <2012-01-28 00:26:09 gawen>
+   Time-stamp: <2012-01-28 01:00:34 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -149,7 +149,7 @@ int main(int argc, char * const argv[])
   DOWN();
   {
     if(*shm <= MAX_FORK)
-      *shm++;
+      (*shm)++;
     else
       do_fork = false;
   }
@@ -174,7 +174,7 @@ int main(int argc, char * const argv[])
 
     DOWN();
     {
-      *shm--;
+      (*shm)--;
     }
     UP();
 
@@ -182,6 +182,8 @@ int main(int argc, char * const argv[])
   }
 
 EXEC:
+  shmdt(shm);
+
   argv++;
   execvp(argv[0], argv);
   err(1, "exec");
