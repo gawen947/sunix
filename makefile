@@ -94,7 +94,7 @@ kill: kill.c
 	$(CC) $(CFLAGS) $^ -o $@
 
 chmod: chmod.c bsd.c
-	$(CC) $(CFLAGS) -DNO_HTABLE -DNO_STRMODE $^ -o $@
+	$(CC) $(CFLAGS) -DNO_HTABLE $^ -o $@
 # end of bsd ports 
 
 gpushd-server: safe-call.c safe-call.h gpushd.h gpushd-server.c gpushd-common.c gpushd-common.h
