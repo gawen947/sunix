@@ -1,5 +1,5 @@
 /* File: bsd.c
-   Time-stamp: <2012-01-28 02:46:34 gawen>
+   Time-stamp: <2012-01-28 23:56:18 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -354,7 +354,7 @@ mode_t getmode(const void *bbox, mode_t omode)
   }                                                     \
   set = addcmd(set, (a), (b), (c), (d))
 
-#define STANDARD_BITS (S_ISUID|S_ISGID|S_IRWXU|S_IRWXG|S_IRWXO)
+#define STANDARD_BITS (S_ISGID|S_ISVTX|S_ISUID|S_ISGID|S_IRWXU|S_IRWXG|S_IRWXO)
 
 void * setmode(const char *p)
 {
