@@ -54,8 +54,25 @@ static void usage(void);
 
 static uid_t uid;
 static gid_t gid;
-static int ischown;
 static const char *gname;
+
+static void verbose(uid_t uid, gid_t gid, FTSENT *p)
+{
+  printf("%s: %ju:%ju -> %ju:%ju\n",
+         p->fts_path,
+         (uintmax_t)
+         p->fts_statp->st_uid,
+         (uintmax_t)
+         p->fts_statp->st_gid,
+         (uid == (uid_t)-1) ?
+         (uintmax_t)
+         p->fts_statp->st_uid :
+         (uintmax_t)uid,
+           (gid == (gid_t)-1) ?
+         (uintmax_t)
+         p->fts_statp->st_gid :
+         (uintmax_t)gid);
+}
 
 int main(int argc, char **argv)
 {
@@ -63,9 +80,8 @@ int main(int argc, char **argv)
   FTSENT *p;
   int Hflag, Lflag, Rflag, fflag, hflag, vflag, xflag, cflag;
   int ch, fts_options, rval;
+  char *from = NULL;
   char *cp;
-
-  ischown = (strcmp(basename(argv[0]), "chown") == 0);
 
   enum opt { OPT_DEREFERENCE,
              OPT_REFERENCE,
@@ -91,6 +107,9 @@ int main(int argc, char **argv)
   Hflag = Lflag = Rflag = fflag = hflag = vflag = xflag = cflag = 0;
   while ((ch = getopt(argc, argv, "HLPRfhcvx")) != -1)
     switch (ch) {
+    case OPT_FROM:
+      from = optarg;
+      break;
     case 'H':
       Hflag = 1;
       Lflag = 0;
@@ -149,21 +168,19 @@ int main(int argc, char **argv)
 
   uid = (uid_t)-1;
   gid = (gid_t)-1;
-  if (ischown) {
-    if ((cp = strchr(*argv, ':')) != NULL) {
-      *cp++ = '\0';
-      a_gid(cp);
-    }
+
+  if ((cp = strchr(*argv, ':')) != NULL) {
+    *cp++ = '\0';
+    a_gid(cp);
+  }
 #ifdef SUPPORT_DOT
-    else if ((cp = strchr(*argv, '.')) != NULL) {
-      warnx("separation of user and group with a period is deprecated");
-      *cp++ = '\0';
-      a_gid(cp);
-    }
+  else if ((cp = strchr(*argv, '.')) != NULL) {
+    warnx("separation of user and group with a period is deprecated");
+    *cp++ = '\0';
+    a_gid(cp);
+  }
 #endif
-    a_uid(*argv);
-  } else
-    a_gid(*argv);
+  a_uid(*argv);
 
   if ((ftsp = fts_open(++argv, fts_options, 0)) == NULL)
     err(1, NULL);
@@ -199,33 +216,8 @@ int main(int argc, char **argv)
     }
     if ((uid == (uid_t)-1 || uid == p->fts_statp->st_uid) &&
         (gid == (gid_t)-1 || gid == p->fts_statp->st_gid)) {
-      if(vflag && !cflag) {
-        if (ischown) {
-          printf("%s: %ju:%ju -> %ju:%ju\n",
-                 p->fts_path,
-                 (uintmax_t)
-                 p->fts_statp->st_uid,
-                 (uintmax_t)
-                 p->fts_statp->st_gid,
-                 (uid == (uid_t)-1) ?
-                 (uintmax_t)
-                 p->fts_statp->st_uid :
-                 (uintmax_t)uid,
-                 (gid == (gid_t)-1) ?
-                 (uintmax_t)
-                 p->fts_statp->st_gid :
-                 (uintmax_t)gid);
-        } else {
-          printf("%s: %ju -> %ju\n",
-                 p->fts_path,
-                 (uintmax_t)
-                 p->fts_statp->st_gid,
-                 (gid == (gid_t)-1) ?
-                 (uintmax_t)
-                 p->fts_statp->st_gid :
-                 (uintmax_t)gid);
-        }
-      }
+      if(vflag && !cflag)
+        verbose(uid, gid, p);
       continue;
     }
     if ((hflag ? lchown : chown)(p->fts_accpath, uid, gid) == -1) {
@@ -234,33 +226,8 @@ int main(int argc, char **argv)
         rval = 1;
       }
     } else {
-      if (vflag) {
-        if (ischown) {
-          printf("%s: %ju:%ju -> %ju:%ju\n",
-                 p->fts_path,
-                 (uintmax_t)
-                 p->fts_statp->st_uid,
-                 (uintmax_t)
-                 p->fts_statp->st_gid,
-                 (uid == (uid_t)-1) ?
-                 (uintmax_t)
-                 p->fts_statp->st_uid :
-                 (uintmax_t)uid,
-                 (gid == (gid_t)-1) ?
-                 (uintmax_t)
-                 p->fts_statp->st_gid :
-                 (uintmax_t)gid);
-        } else {
-          printf("%s: %ju -> %ju\n",
-                 p->fts_path,
-                 (uintmax_t)
-                 p->fts_statp->st_gid,
-                 (gid == (gid_t)-1) ?
-                 (uintmax_t)
-                 p->fts_statp->st_gid :
-                 (uintmax_t)gid);
-        }
-      }
+      if (vflag)
+        verbose(uid, gid, p);
     }
   }
   if (errno)
@@ -337,13 +304,9 @@ static void chownerr(const char *file)
 static void usage(void)
 {
 
-  if (ischown)
-    (void)fprintf(stderr, "%s\n%s\n",
-                  "usage: chown [-fhvx] [-R [-H | -L | -P]] owner[:group]"
-                  " file ...",
-                  "       chown [-fhvx] [-R [-H | -L | -P]] :group file ...");
-  else
-    (void)fprintf(stderr, "%s\n",
-                  "usage: chgrp [-fhvx] [-R [-H | -L | -P]] group file ...");
+  (void)fprintf(stderr, "%s\n%s\n",
+                "usage: chown [-fhvx] [-R [-H | -L | -P]] owner[:group]"
+                " file ...",
+                "       chown [-fhvx] [-R [-H | -L | -P]] :group file ...");
   exit(1);
 }
