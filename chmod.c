@@ -141,14 +141,8 @@ int main(int argc, char *argv[])
 done: argv += optind;
   argc -= optind;
 
-  if (argc < 2 && !ref) {
+  if ((argc < 2 && !ref) || (argc < 1 && ref))
     usage();
-    exit(1);
-  }
-  else if(argc < 1 && ref) {
-    usage();
-    exit(1);
-  }
 
   if (Rflag) {
     fts_options = FTS_PHYSICAL;

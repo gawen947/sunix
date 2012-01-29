@@ -46,14 +46,16 @@
 #include <string.h>
 #include <unistd.h>
 
-static void a_gid(const char *);
-static void a_uid(const char *);
+static gid_t a_gid(const char *);
+static uid_t a_uid(const char *);
 static void chownerr(const char *);
 static uid_t id(const char *, const char *);
 static void usage(void);
 
 static uid_t uid;
 static gid_t gid;
+static uid_t from_uid = -1;
+static gid_t from_gid = -1;
 static const char *gname;
 
 static void verbose(uid_t uid, gid_t gid, FTSENT *p)
@@ -74,13 +76,35 @@ static void verbose(uid_t uid, gid_t gid, FTSENT *p)
          (uintmax_t)gid);
 }
 
+static void parse_from(char *from)
+{
+  char *cp;
+
+  if(*from == '\0')
+    return;
+
+  if ((cp = strchr(from, ':')) != NULL) {
+      *cp++ = '\0';
+      from_gid = a_gid(cp);
+  }
+#ifdef SUPPORT_DOT
+  else if ((cp = strchr(from, '.')) != NULL) {
+    warnx("separation of user and group with a period is deprecated");
+    *cp++ = '\0';
+    from_gid = a_gid(cp);
+  }
+#endif
+  from_uid = a_uid(from);
+}
+
 int main(int argc, char **argv)
 {
   FTS *ftsp;
   FTSENT *p;
-  int Hflag, Lflag, Rflag, fflag, hflag, vflag, xflag, cflag;
+  int Hflag, Lflag, Rflag, fflag, hflag, vflag, xflag, cflag, rootflg;
   int ch, fts_options, rval;
   char *from = NULL;
+  char *ref  = NULL;
   char *cp;
 
   enum opt { OPT_DEREFERENCE,
@@ -104,11 +128,20 @@ int main(int argc, char **argv)
     { NULL, 0, NULL, 0 }
   };
 
-  Hflag = Lflag = Rflag = fflag = hflag = vflag = xflag = cflag = 0;
-  while ((ch = getopt(argc, argv, "HLPRfhcvx")) != -1)
+  Hflag = Lflag = Rflag = fflag = hflag = vflag = xflag = cflag = rootflg =  0;
+  while ((ch = getopt_long(argc, argv, "HLPRfhcvx", opts, NULL)) != -1)
     switch (ch) {
     case OPT_FROM:
       from = optarg;
+      break;
+    case OPT_REFERENCE:
+      ref  = optarg;
+      break;
+    case OPT_ROOT:
+      rootflg = 1;
+      break;
+    case OPT_NO_ROOT:
+    case OPT_DEREFERENCE:
       break;
     case 'H':
       Hflag = 1;
@@ -147,7 +180,7 @@ int main(int argc, char **argv)
   argv += optind;
   argc -= optind;
 
-  if (argc < 2)
+  if ((argc < 2 && !ref) || (argc < 1 && ref))
     usage();
 
   if (Rflag) {
@@ -166,24 +199,36 @@ int main(int argc, char **argv)
   if (xflag)
     fts_options |= FTS_XDEV;
 
-  uid = (uid_t)-1;
-  gid = (gid_t)-1;
-
-  if ((cp = strchr(*argv, ':')) != NULL) {
-    *cp++ = '\0';
-    a_gid(cp);
-  }
+  if(!ref) {
+    if ((cp = strchr(*argv, ':')) != NULL) {
+      *cp++ = '\0';
+      gid = a_gid(cp);
+    }
 #ifdef SUPPORT_DOT
-  else if ((cp = strchr(*argv, '.')) != NULL) {
-    warnx("separation of user and group with a period is deprecated");
-    *cp++ = '\0';
-    a_gid(cp);
-  }
+    else if ((cp = strchr(*argv, '.')) != NULL) {
+      warnx("separation of user and group with a period is deprecated");
+      *cp++ = '\0';
+      gid = a_gid(cp);
+    }
 #endif
-  a_uid(*argv);
+    uid = a_uid(*argv);
+  }
+  else {
+    struct stat st;
+    if(stat(ref, &st) < 0)
+      err(1, "stat \"%s\"", ref);
+    uid = st.st_uid;
+    gid = st.st_gid;
+  }
+
+  if(from)
+    parse_from(from);
 
   if ((ftsp = fts_open(++argv, fts_options, 0)) == NULL)
     err(1, NULL);
+
+  if(rootflg && Rflag && !strcmp(*argv, "/"))
+    errx(1, "will not recurse indide root");
 
   for (rval = 0; (p = fts_read(ftsp)) != NULL;) {
     switch (p->fts_info) {
@@ -214,6 +259,11 @@ int main(int argc, char **argv)
     default:
       break;
     }
+
+    if((from_uid != -1 || from_gid != -1) &&
+       (p->fts_statp->st_uid != from_uid && p->fts_statp->st_gid != from_gid))
+      continue;
+
     if ((uid == (uid_t)-1 || uid == p->fts_statp->st_uid) &&
         (gid == (gid_t)-1 || gid == p->fts_statp->st_gid)) {
       if(vflag && !cflag)
@@ -235,23 +285,23 @@ int main(int argc, char **argv)
   exit(rval);
 }
 
-static void a_gid(const char *s)
+static gid_t a_gid(const char *s)
 {
   struct group *gr;
 
   if (*s == '\0')     /* Argument was "uid[:.]". */
-    return;
+    return -1;
   gname = s;
-  gid = ((gr = getgrnam(s)) != NULL) ? gr->gr_gid : id(s, "group");
+  return ((gr = getgrnam(s)) != NULL) ? gr->gr_gid : id(s, "group");
 }
 
-static void a_uid(const char *s)
+static uid_t a_uid(const char *s)
 {
   struct passwd *pw;
 
   if (*s == '\0')     /* Argument was "[:.]gid". */
-    return;
-  uid = ((pw = getpwnam(s)) != NULL) ? pw->pw_uid : id(s, "user");
+    return -1;
+  return ((pw = getpwnam(s)) != NULL) ? pw->pw_uid : id(s, "user");
 }
 
 static uid_t id(const char *name, const char *type)
