@@ -132,11 +132,11 @@ int main(int argc, const char *argv[])
      either using command line
      arguments either using stdin */
   if(argc > 1) {
-    int i;
+    argv++;
 
-    for(i = 1 ; i < argc ; i++)
-      if(ftw(argv[i], read_path, max_open) < 0)
-        warn("cannot walk into \"%s\"", argv[i]);
+    for(; *argv ; argv++) 
+      if(ftw(*argv, read_path, max_open) < 0)
+        warn("cannot walk into \"%s\"", *argv);
   }
   else {
     while(!feof(stdin)) {
