@@ -545,7 +545,7 @@ static void printlong(const DISPLAY *dp)
     if (f_inode)
       (void)printf("%*lu ", dp->s_inode, (u_long)sp->st_ino);
     if (f_size)
-      (void)printf("%*jd ",
+      (void)printf("%*ld ",
                    dp->s_block, howmany(sp->st_blocks, blocksize));
     strmode(sp->st_mode, buf);
     np = p->fts_pointer;
