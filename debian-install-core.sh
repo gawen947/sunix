@@ -20,3 +20,5 @@
 ./debian-install-core-file.sh /bin chmod
 ./debian-install-core-file.sh /usr/bin seq
 ./debian-install-core-file.sh /usr/bin clear
+./debian-install-core-file.sh /bin chown
+./debian-install-core-file.sh /bin rmdir

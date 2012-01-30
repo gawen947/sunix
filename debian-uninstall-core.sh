@@ -20,3 +20,5 @@
 ./debian-uninstall-core-file.sh /bin/chmod
 ./debian-uninstall-core-file.sh /usr/bin/seq
 ./debian-uninstall-core-file.sh /usr/bin/clear
+./debian-uninstall-core-file.sh /bin/chown
+./debian-uninstall-core-file.sh /bin/rmdir
