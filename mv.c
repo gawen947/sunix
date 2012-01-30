@@ -70,22 +70,6 @@ static int do_move(const char *, const char *);
 static int fastcopy(const char *, const char *, struct stat *);
 static void usage(void);
 
-static bool is_mountpoint(const char *path)
-{
-  struct stat st, st2;
-  char buf[256];
-
-  memset(buf, 0, sizeof(buf));
-  strncpy(buf, path, sizeof(buf) - 4);
-  strcat(buf, "/..");
-
-  stat(path, &st);
-  stat(buf, &st2);
-
-  return (st.st_dev != st2.st_dev) ||                     \
-         (st.st_dev == st2.st_dev && st.st_ino == st2.st_ino);
-}
-
 int main(int argc, char *argv[])
 {
   size_t baselen, len;
@@ -242,10 +226,6 @@ static int do_move(const char *from, const char *to)
       /* Can't mv(1) a mount point. */
       if (realpath(from, path) == NULL) {
         warn("cannot resolve %s: %s", from, path);
-        return (1);
-      }
-      if (is_mountpoint(from)) {
-        warnx("cannot rename a mount point");
         return (1);
       }
     }
