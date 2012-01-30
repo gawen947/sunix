@@ -244,7 +244,7 @@ static int do_move(const char *from, const char *to)
         warn("cannot resolve %s: %s", from, path);
         return (1);
       }
-      if (is_mountpoint(path)) {
+      if (is_mountpoint(from)) {
         warnx("cannot rename a mount point");
         return (1);
       }

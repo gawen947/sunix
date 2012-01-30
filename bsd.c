@@ -1,5 +1,5 @@
 /* File: bsd.c
-   Time-stamp: <2012-01-28 23:56:18 gawen>
+   Time-stamp: <2012-01-30 21:37:29 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -150,7 +150,7 @@ void strmode(mode_t mode, char *bp)
 /* We use Knuth's multiplicative hash */
 static uint32_t knuth_hash(const void *key)
 {
-  register uint32_t hash = (unsigned long long)key;
+  register uint32_t hash = (unsigned long)key;
 
   hash *= 0x9e3779b1;
 
