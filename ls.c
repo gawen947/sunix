@@ -711,7 +711,7 @@ static int printaname(const FTSENT *p, u_long inodefield, u_long sizefield)
   if (f_inode)
     chcnt += printf("%*lu ", (int)inodefield, (u_long)sp->st_ino);
   if (f_size)
-    chcnt += printf("%*jd ",
+    chcnt += printf("%*ld ",
                     (int)sizefield, howmany(sp->st_blocks, blocksize));
 #ifdef COLORLS
   if (f_color)
@@ -1001,7 +1001,7 @@ static void printsize(size_t width, off_t bytes)
     humanize_number(buf, sizeof(buf), (int64_t)bytes);
     (void)printf("%*s ", (u_int)width, buf);
   } else
-    (void)printf("%*jd ", (u_int)width, bytes);
+    (void)printf("%*ld ", (u_int)width, bytes);
 }
 
 static void usage(void)
@@ -1547,7 +1547,7 @@ static void display(const FTSENT *p, FTSENT *list, int options)
       strcpy(initmax2, "0");
 
     ninitmax = sscanf(jinitmax,
-                      " %lu : %ld : %lu : %u : %u : %i : %jd : %lu : %lu ",
+                      " %lu : %ld : %lu : %u : %u : %i : %ld : %lu : %lu ",
                       &maxinode, &maxblock, &maxnlink, &maxuser,
                       &maxgroup, &maxflags, &maxsize, &maxlen, &maxlabelstr);
     f_notabs = 1;
