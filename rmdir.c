@@ -32,16 +32,14 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/wait.h>
 
 #include <err.h>
+#include <errno.h>
 #include <getopt.h>
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-
-#define _RM_PATH "/bin/rm"
 
 static int pflag;
 static int vflag;
@@ -53,27 +51,17 @@ static void usage()
   exit(1);
 }
 
-static void do_forkrm(const char *path)
-{
-  pid_t pid = fork();
-
-  if(pid < 0)
-    err(1, "cannot fork rm", _RM_PATH);
-  else if(pid > 0)
-    wait(NULL);
-  else
-    execlp(_RM_PATH, _RM_PATH, "-rf", path, NULL);
-}
-
 static void do_rmdir(const char *path)
 {
   if(vflag)
     printf("%s\n", path);
 
-  if(eflag)
-    do_forkrm(path);
-  else if(rmdir(path) < 0)
-    err(1, "cannot remove \"%s\"", path);
+  if(rmdir(path) < 0)
+    if(eflag && errno != ENOTEMPTY)
+      err(1, "cannot remove \"%s\"", path);
+  
+  if(vflag)
+    printf("%s\n", path);
 }
 
 int main(int argc, char *argv[])
