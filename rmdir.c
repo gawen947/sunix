@@ -1,5 +1,5 @@
 /* File: rmdir.c
-   Time-stamp: <2012-01-30 01:55:28 gawen>
+   Time-stamp: <2012-02-04 20:19:06 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -32,6 +32,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 
 #include <err.h>
 #include <getopt.h>
@@ -44,6 +45,7 @@
 
 static int pflag;
 static int vflag;
+static int eflag;
 
 static void usage()
 {
@@ -51,19 +53,37 @@ static void usage()
   exit(1);
 }
 
+static void do_forkrm(const char *path)
+{
+  pid_t pid = fork();
+
+  if(pid < 0)
+    err(1, "cannot fork rm", _RM_PATH);
+  else if(pid > 0)
+    wait(NULL);
+  else
+    execlp(_RM_PATH, _RM_PATH, "-rf", path, NULL);
+}
+
 static void do_rmdir(const char *path)
 {
-  if(rmdir(path) < 0)
-    err(1, "cannot remove \"%s\"", path);
-  else if(vflag)
+  if(vflag)
     printf("%s\n", path);
+
+  if(eflag)
+    do_forkrm(path);
+  else if(rmdir(path) < 0)
+    err(1, "cannot remove \"%s\"", path);
 }
 
 int main(int argc, char *argv[])
 {
+  enum opt { OPT_EMPTY };
+
   struct option opts[] = {
     { "parents", no_argument, NULL, 'p' },
     { "verbose", no_argument, NULL, 'v' },
+    { "ignore-fail-on-non-empty", no_argument, NULL, OPT_EMPTY },
     { NULL, 0, NULL, 0 }
   };
 
@@ -79,6 +99,9 @@ int main(int argc, char *argv[])
       break;
     case 'v':
       vflag = 1;
+      break;
+    case OPT_EMPTY:
+      eflag = 1;
       break;
     case '?':
     default:
