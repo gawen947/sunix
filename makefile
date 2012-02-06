@@ -23,7 +23,7 @@ endif
 
 all: true false quickexec autorestart uptime-ng cat echo basename sleep unlink \
 		 yes link args-length gpushd-server gpushd-client xte-bench readahead ln   \
-		 rm cp mv ls cat mkdir test pwd kill par chmod seq clear chown rmdir base
+		 rm cp mv ls cat mkdir test pwd kill par chmod seq clear chown rmdir
 	strip $^
 
 true: true.c common.h
