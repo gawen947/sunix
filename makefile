@@ -168,7 +168,7 @@ debian-uninstall-core:
 	@sh debian-uninstall-core.sh
 
 install: all
-	$(INSTALL) base $(BIN)
+	#$(INSTALL) base $(BIN)
 	$(INSTALL) par $(BIN)
 	$(INSTALL) readahead $(BIN)
 	$(INSTALL) xte-bench $(BIN)
