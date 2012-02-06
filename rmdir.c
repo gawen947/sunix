@@ -57,7 +57,7 @@ static void do_rmdir(const char *path)
     printf("%s\n", path);
 
   if(rmdir(path) < 0)
-    if(eflag && errno != ENOTEMPTY)
+    if(!eflag || errno != ENOTEMPTY)
       err(1, "cannot remove \"%s\"", path);
   
   if(vflag)
