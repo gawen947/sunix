@@ -489,8 +489,15 @@ int main(int argc, char *argv[])
     exit(eval);
   }
 
+  struct option opts[] = {
+    { "recursive", no_argument, NULL, 'r' },
+    { "force", no_argument, NULL, 'f' },
+    { "verbose", no_argument, NULL, 'v' },
+    { NULL, 0, NULL, 0 }
+  }; 
+
   Pflag = rflag = 0;
-  while ((ch = getopt_long(argc, argv, "dfiIPRrv", NULL, NULL)) != -1)
+  while ((ch = getopt_long(argc, argv, "dfiIPRrv", opts, NULL)) != -1)
     switch(ch) {
     case 'd':
       dflag = 1;
