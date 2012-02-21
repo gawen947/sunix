@@ -1,5 +1,5 @@
 /* File: record-invalid.c
-   Time-stamp: <2012-02-21 23:15:31 gawen>
+   Time-stamp: <2012-02-21 23:50:25 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -31,6 +31,8 @@
 #include <time.h>
 #include <stdio.h>
 #include <ctype.h>
+#include <unistd.h>
+#include <sys/types.h>
 
 #define INVALID_PATH "/var/log/invalid.sunix"
 
@@ -57,7 +59,8 @@ void record_invalid(const char *prog_name, const char *option)
   st = trimblank_nospace(ctime(&t));
   if(!(f = fopen(INVALID_PATH, "a")))
     return;
-  fprintf(f, "%s : %s : Invalid option '%s'\n", st, prog_name, option);
+  fprintf(f, "%s (uid=%d) : %s : Invalid option '%s'\n",
+          st, getuid(), prog_name, option);
   fclose(f);
 }
 
@@ -73,8 +76,9 @@ void record_invalid_string(const char *prog_name, const char *op,
   if(!(f = fopen(INVALID_PATH, "a")))
     return;
   if(op)
-    fprintf(f, "%s : %s : (%s) %s\n", st, prog_name, op, msg);
+    fprintf(f, "%s (uid=%d) : %s : (%s) %s\n",
+            st, getuid(), prog_name, op, msg);
   else
-    fprintf(f, "%s : %s : %s\n", st, prog_name, msg);
+    fprintf(f, "%s (uid=%d) : %s : %s\n", st, getuid(), prog_name, msg);
   fclose(f);
 }
