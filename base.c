@@ -1,5 +1,5 @@
 /* File: base.c
-   Time-stamp: <2012-02-21 19:01:09 gawen>
+   Time-stamp: <2012-02-21 19:10:14 gawen>
 
    Copyright (C) 2011 David Hauweele <david@hauweele.net>
 
@@ -158,6 +158,12 @@ static void convert(const char *line)
 
   /* convert from input base */
   for(const char *s = line ; *s != '\0' ; s++) {
+    /* ignore */
+    switch(*s) {
+    case '\n':
+      continue;
+    }
+
     integer_part *= input_base;
     integer_part += input_symbols_value(*s);
 
@@ -276,7 +282,7 @@ int main(int argc, char *argv[])
   argc -= optind;
   argv += optind;
 
-  if(!argv) {
+  if(!argv || *argv == '\0') {
     while(!feof(stdin)) {
       char buf[MAX_LINE];
 
