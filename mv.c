@@ -56,6 +56,7 @@
 #include <unistd.h>
 
 #include "bsd.h"
+#include "record-invalid.h"
 
 #define _PATH_CP "/bin/cp"
 #define _PATH_RM "/bin/rm"
@@ -100,6 +101,8 @@ int main(int argc, char *argv[])
       ndir = 1;
       break;
     default:
+    case '?':
+      record_invalid(argv[0], argv[optind - 1]);
       usage();
     }
 

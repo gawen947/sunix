@@ -1,5 +1,5 @@
-/* File: rmdir.c
-   Time-stamp: <2012-02-21 22:55:41 gawen>
+/* File: record-invalid.c
+   Time-stamp: <2012-02-21 23:15:31 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -28,100 +28,53 @@
    OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
    SUCH DAMAGE. */
 
-#define _BSD_SOURCE
-
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include <err.h>
-#include <errno.h>
-#include <getopt.h>
-#include <string.h>
+#include <time.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
+#include <ctype.h>
 
-#include "record-invalid.h"
+#define INVALID_PATH "/var/log/invalid.sunix"
 
-static int pflag;
-static int vflag;
-static int eflag;
-
-static void usage()
+static const char * trimblank_nospace(const char *s)
 {
-  (void)fprintf(stderr, "usage: rmdir [-pv] directory_name ...\n");
-  exit(1);
-}
+  static char res[256];
 
-static void do_rmdir(const char *path)
-{
-  if(vflag)
-    printf("%s\n", path);
-
-  if(rmdir(path) < 0)
-    if(!eflag || errno != ENOTEMPTY)
-      err(1, "cannot remove \"%s\"", path);
-
-  if(vflag)
-    printf("%s\n", path);
-}
-
-int main(int argc, char *argv[])
-{
-  enum opt { OPT_EMPTY };
-
-  struct option opts[] = {
-    { "parents", no_argument, NULL, 'p' },
-    { "verbose", no_argument, NULL, 'v' },
-    { "ignore-fail-on-non-empty", no_argument, NULL, OPT_EMPTY },
-    { NULL, 0, NULL, 0 }
-  };
-
-  while(1) {
-    int c = getopt_long(argc, argv, "pv", opts, NULL);
-
-    if(c < 0)
-      break;
-
-    switch(c) {
-    case 'p':
-      pflag = 1;
-      break;
-    case 'v':
-      vflag = 1;
-      break;
-    case OPT_EMPTY:
-      eflag = 1;
-      break;
-    default:
-    case '?':
-      record_invalid(argv[0], argv[optind - 1]);
-      usage();
-    }
+  for(int i = 0 ; i < sizeof(res) ; i++) {
+    if(isspace(s[i]) && s[i] != ' ')
+      continue;
+    res[i] = s[i];
   }
 
-  argc -= optind;
-  argv += optind;
-
-  if(!*argv)
-    usage();
-
-  for(; *argv ; argv++) {
-    do_rmdir(*argv);
-
-    if(pflag) {
-      size_t n = strlen(*argv);
-      char *s;
-
-      for(s = *argv + n ; s != *argv ; s--) {
-        if(*s == '/') {
-          *s = '\0';
-          do_rmdir(*argv);
-        }
-      }
-    }
-  }
-
-  exit(0);
+  return res;
 }
 
+void record_invalid(const char *prog_name, const char *option)
+{
+  const char *st;
+  time_t t;
+  FILE *f;
+
+  time(&t);
+  st = trimblank_nospace(ctime(&t));
+  if(!(f = fopen(INVALID_PATH, "a")))
+    return;
+  fprintf(f, "%s : %s : Invalid option '%s'\n", st, prog_name, option);
+  fclose(f);
+}
+
+void record_invalid_string(const char *prog_name, const char *op,
+                           const char *msg)
+{
+  const char *st;
+  time_t t;
+  FILE *f;
+
+  time(&t);
+  st = trimblank_nospace(ctime(&t));
+  if(!(f = fopen(INVALID_PATH, "a")))
+    return;
+  if(op)
+    fprintf(f, "%s : %s : (%s) %s\n", st, prog_name, op, msg);
+  else
+    fprintf(f, "%s : %s : %s\n", st, prog_name, msg);
+  fclose(f);
+}

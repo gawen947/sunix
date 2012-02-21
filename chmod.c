@@ -43,6 +43,7 @@
 #include <unistd.h>
 
 #include "bsd.h"
+#include "record-invalid.h"
 
 static void usage(void);
 
@@ -134,8 +135,9 @@ int main(int argc, char *argv[])
     case 'v':
       vflag = 1;
       break;
-    case '?':
     default:
+    case '?':
+      record_invalid(argv[0], argv[optind - 1]);
       usage();
     }
 done: argv += optind;

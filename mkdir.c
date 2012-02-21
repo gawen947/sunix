@@ -45,6 +45,7 @@
 #include <unistd.h>
 
 #include "bsd.h"
+#include "record-invalid.h"
 
 static int  build(char *, mode_t);
 static void usage(void);
@@ -83,6 +84,8 @@ int main(int argc, char *argv[])
       warnx("SELinux not implemented");
       break;
     default:
+    case '?':
+      record_invalid(argv[0], argv[optind - 1]);
       usage();
     }
 

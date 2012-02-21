@@ -64,6 +64,7 @@
 #endif
 
 #include "bsd.h"
+#include "record-invalid.h"
 
 #define NO_PRINT  1
 
@@ -1275,7 +1276,7 @@ int main(int argc, char *argv[])
       f_octal_escape = 0;
       break;
     default:
-    case '?':
+      record_invalid(argv[0], argv[optind - 1]);
       usage();
     }
   }

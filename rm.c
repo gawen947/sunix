@@ -49,6 +49,7 @@
 #include <unistd.h>
 
 #include "bsd.h"
+#include "record-invalid.h"
 
 static int dflag, eval, fflag, iflag, Pflag, vflag, stdin_ok;
 static int rflag, Iflag;
@@ -494,7 +495,7 @@ int main(int argc, char *argv[])
     { "force", no_argument, NULL, 'f' },
     { "verbose", no_argument, NULL, 'v' },
     { NULL, 0, NULL, 0 }
-  }; 
+  };
 
   Pflag = rflag = 0;
   while ((ch = getopt_long(argc, argv, "dfiIPRrv", opts, NULL)) != -1)
@@ -524,6 +525,8 @@ int main(int argc, char *argv[])
       vflag = 1;
       break;
     default:
+    case '?':
+      record_invalid(argv[0], argv[optind - 1]);
       usage();
     }
   argc -= optind;

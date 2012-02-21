@@ -38,6 +38,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "record-invalid.h"
+
 static void nosig(const char *);
 static void printsigdesc(FILE *);
 static void printsignals(FILE *);
@@ -396,8 +398,10 @@ int main(int argc, char *argv[])
       if (!isdigit(**argv))
         usage();
       numsig = strtol(*argv, &ep, 10);
-      if (!**argv || *ep)
+      if (!**argv || *ep) {
+        record_invalid_string(argv[0], NULL, *argv);
         errx(2, "illegal signal number: %s", *argv);
+      }
       if (numsig >= 128)
         numsig -= 128;
       if (numsig <= 0 || numsig >= SIGNUM_BOUND)

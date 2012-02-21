@@ -26,6 +26,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "record-invalid.h"
+
 static void error(const char *msg, ...)
 {
   va_list ap;
@@ -33,8 +35,6 @@ static void error(const char *msg, ...)
   verrx(2, msg, ap);
   /*NOTREACHED*/
   va_end(ap);
-
-  
 }
 
 /* test(1) accepts the following grammar:
@@ -214,7 +214,7 @@ int main(int argc, char **argv)
 static void
 syntax(const char *op, const char *msg)
 {
-
+  record_invalid_string("test", op, msg);
   if (op && *op)
     error("%s: %s", op, msg);
   else

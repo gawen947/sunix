@@ -52,6 +52,7 @@
 #include <stddef.h>
 
 #include "bsd.h"
+#include "record-invalid.h"
 
 static int bflag, eflag, nflag, sflag, tflag, vflag;
 static int rval;
@@ -107,6 +108,8 @@ int main(int argc, char *argv[])
       vflag = 1;
       break;
     default:
+    case '?':
+      record_invalid(argv[0], argv[optind - 1]);
       usage();
     }
   argv += optind;

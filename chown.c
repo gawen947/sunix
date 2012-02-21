@@ -46,6 +46,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "record-invalid.h"
+
 static gid_t a_gid(const char *);
 static uid_t a_uid(const char *);
 static void chownerr(const char *);
@@ -173,8 +175,9 @@ int main(int argc, char **argv)
     case 'x':
       xflag = 1;
       break;
-    case '?':
     default:
+    case '?':
+      record_invalid(argv[0], argv[optind - 1]);
       usage();
     }
   argv += optind;

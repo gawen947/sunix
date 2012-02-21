@@ -10,7 +10,7 @@ TLIBC_SRC := tlibc.h
 SUBARCH   := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
 		                  -e s/arm.*/arm/ -e s/sa110/arm/ \
 				       -e s/s390x/s390/ -e s/parisc64/parisc/ \
-      				 -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
+				 -e s/ppc.*/powerpc/ -e s/mips.*/mips/ \
 			      	 -e s/sh[234].*/sh/ )
 ARCH      ?= $(SUBARCH)
 
@@ -66,47 +66,47 @@ clear: clear.c $(TLIBC_SRC)
 	$(CC) $(FREE_CFLAGS) $^ -o $@
 
 # directly ported from bsd base system
-ln: ln.c bsd.c
+ln: ln.c bsd.c record-invalid.c
 	$(CC) $(CFLAGS) -DNO_HTABLE -DNO_STRMODE -DNO_SETMODE $^ -o $@
 
-rm: rm.c bsd.c htable.c
+rm: rm.c bsd.c htable.c record-invalid.c
 	$(CC) $(CFLAGS) -DNO_SETMODE $^ -o $@
 
-cp: cp.c bsd.c
+cp: cp.c bsd.c record-invalid.c
 	$(CC) $(CFLAGS) -DNO_HTABLE -DNO_STRMODE -DNO_SETMODE $^ -o $@
 
-mv: mv.c bsd.c htable.c
+mv: mv.c bsd.c htable.c record-invalid.c
 	$(CC) $(CFLAGS) $^ -DNO_SETMODE -o $@
 
-ls: ls.c bsd.c htable.c
+ls: ls.c bsd.c htable.c record-invalid.c
 	$(CC) $(CFLAGS) $^ -DCOLORLS -DNO_SETMODE -ltinfo -o $@
 
-cat: cat.c bsd.c
+cat: cat.c bsd.c record-invalid.c
 	$(CC) $(CFLAGS) -DNO_HTABLE -DNO_STRMODE -DNO_SETMODE $^ -o $@
 
-mkdir: mkdir.c bsd.c
+mkdir: mkdir.c bsd.c record-invalid.c
 	$(CC) $(CFLAGS) $^ -DNO_HTABLE -DNO_STRMODE -o $@
 
-test: test.c
+test: test.c record-invalid.c
 	$(CC) $(CFLAGS) $^ -o $@
 
-pwd: pwd.c
+pwd: pwd.c record-invalid.c
 	$(CC) $(CFLAGS) $^ -o $@
 
-kill: kill.c
+kill: kill.c record-invalid.c
 	$(CC) $(CFLAGS) $^ -o $@
 
-chmod: chmod.c bsd.c
+chmod: chmod.c bsd.c record-invalid.c
 	$(CC) $(CFLAGS) -DNO_HTABLE $^ -o $@
 
-seq: seq.c
+seq: seq.c record-invalid.c
 	$(CC) $(CFLAGS) -lm $^ -o $@
 
-chown: chown.c
+chown: chown.c record-invalid.c
 	$(CC) $(CFLAGS) $^ -o $@
-# end of bsd ports 
+# end of bsd ports
 
-rmdir: rmdir.c
+rmdir: rmdir.c record-invalid.c
 	$(CC) $(CFLAGS) $^ -o $@
 
 gpushd-server: safe-call.c safe-call.h gpushd.h gpushd-server.c gpushd-common.c gpushd-common.h

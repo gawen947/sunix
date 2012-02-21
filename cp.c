@@ -67,6 +67,7 @@
 #include <sysexits.h>
 
 #include "bsd.h"
+#include "record-invalid.h"
 
 typedef struct {
   char *p_end;            /* pointer to NULL */
@@ -474,8 +475,9 @@ int main(int argc, char *argv[])
       fts_options |= FTS_XDEV;
       break;
     default:
+    case '?':
+      record_invalid(argv[0], argv[optind - 1]);
       usage();
-      break;
     }
   argc -= optind;
   argv += optind;

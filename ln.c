@@ -1,5 +1,5 @@
 /* File: ln.c
-   Time-stamp: <2012-01-24 17:18:00 gawen>
+   Time-stamp: <2012-02-21 22:34:22 gawen>
 
    Copyright (c) 1987, 1993, 1994
      The Regents of the University of California. All rights reserved.
@@ -44,6 +44,7 @@
 #include <sys/types.h>
 
 #include "bsd.h"
+#include "record-invalid.h"
 
 static int fflag; /* Unlink existing files. */
 static int Fflag; /* Remove empty directories also. */
@@ -264,8 +265,9 @@ int main(int argc, char *argv[])
     case 'w':
       wflag = 1;
       break;
-    case '?':
     default:
+    case '?':
+      record_invalid(argv[0], argv[optind - 1]);
       usage();
     }
 

@@ -37,6 +37,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+#include "record-invalid.h"
+
 static char *getcwd_logical(void);
 static void usage(void);
 
@@ -63,6 +65,7 @@ int main(int argc, char *argv[])
       }
     }
 
+    record_invalid(argv[0], arg);
     usage();
   }
 

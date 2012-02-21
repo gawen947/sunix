@@ -40,6 +40,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include "record-invalid.h"
+
 #define ZERO  '0'
 #define SPACE ' '
 
@@ -110,8 +112,10 @@ int main(int argc, char *argv[])
         if (equalize++)
           pad = SPACE;
       break;
-    case 'h': /* help (GNU) */
     default:
+    case '?':
+      record_invalid(argv[0], argv[optind - 1]);
+    case 'h': /* help (GNU) */
       errflg++;
       break;
     }
