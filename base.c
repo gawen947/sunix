@@ -1,5 +1,5 @@
 /* File: base.c
-   Time-stamp: <2012-02-21 19:10:14 gawen>
+   Time-stamp: <2012-02-21 19:56:37 gawen>
 
    Copyright (C) 2011 David Hauweele <david@hauweele.net>
 
@@ -20,13 +20,14 @@
     cannot do this otherwise than reading string by string and convert them
     at first we just we just use large integers in the future */
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
 #include <string.h>
 #include <getopt.h>
+#include <ctype.h>
+#include <errno.h>
 #include <err.h>
 
 #include "safe-call.h"
@@ -159,10 +160,8 @@ static void convert(const char *line)
   /* convert from input base */
   for(const char *s = line ; *s != '\0' ; s++) {
     /* ignore */
-    switch(*s) {
-    case '\n':
+    if(isspace(*s))
       continue;
-    }
 
     integer_part *= input_base;
     integer_part += input_symbols_value(*s);
@@ -177,11 +176,10 @@ static void convert(const char *line)
     output[i]     = output_symbols[integer_part % output_base];
     integer_part /= output_base;
   }
-  output[i] = '\0';
 
   if(minus_mode)
     putchar(minus);
-  for(; i >= 0 ; i--)
+  for(i--; i >= 0 ; i--)
     putchar(output[i]);
   if(output[0] == '\0')
     putchar(output_symbols[0]);
@@ -286,8 +284,11 @@ int main(int argc, char *argv[])
     while(!feof(stdin)) {
       char buf[MAX_LINE];
 
-      if(!fgets(buf, MAX_LINE, stdin))
+      if(!fgets(buf, MAX_LINE, stdin)) {
+        if(errno == 0)
+          return 0;
         err(1, "Cannot read from stdin");
+      }
 
       convert(buf);
     }
