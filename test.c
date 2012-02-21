@@ -33,6 +33,8 @@ static void error(const char *msg, ...)
   verrx(2, msg, ap);
   /*NOTREACHED*/
   va_end(ap);
+
+  
 }
 
 /* test(1) accepts the following grammar:
