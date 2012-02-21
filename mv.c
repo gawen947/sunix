@@ -63,7 +63,7 @@
 /* Exit code for a failed exec. */
 #define EXEC_FAILED 127
 
-static int  fflg, iflg, nflg, vflg;
+static int  fflg, iflg, nflg, vflg, ndir;
 
 static int copy(const char *, const char *);
 static int do_move(const char *, const char *);
@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
   int ch;
   char path[PATH_MAX];
 
-  while ((ch = getopt_long(argc, argv, "finv", NULL, NULL)) != -1)
+  while ((ch = getopt_long(argc, argv, "finvT", NULL, NULL)) != -1)
     switch (ch) {
     case 'i':
       iflg = 1;
@@ -96,6 +96,9 @@ int main(int argc, char *argv[])
     case 'v':
       vflg = 1;
       break;
+    case 'T':
+      ndir = 1;
+      break;
     default:
       usage();
     }
@@ -110,6 +113,8 @@ int main(int argc, char *argv[])
 
   if (argc < 2)
     usage();
+  if(ndir && argc > 2)
+    errx(0, "extra operand \"%s\"", argv[2]);
 
   /*
    * If the stat on the target fails or the target isn't a directory,
