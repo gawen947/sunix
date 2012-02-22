@@ -14,6 +14,10 @@ SUBARCH   := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
 			      	 -e s/sh[234].*/sh/ )
 ARCH      ?= $(SUBARCH)
 
+ifdef DEBUG
+	FREE_CFLAGS += -ggdb -DDEBUG
+	CFLAGS      += -ggdb -DDEBUG
+endif
 ifeq ($(ARCH),i386)
         TLIBC_SRC += _i386_syscall.S _i386_syscall.c
 endif

@@ -215,6 +215,8 @@ int main(int argc, char **argv)
     }
 #endif
     uid = a_uid(*argv);
+
+    ++argv;
   }
   else {
     struct stat st;
@@ -227,7 +229,7 @@ int main(int argc, char **argv)
   if(from)
     parse_from(from);
 
-  if ((ftsp = fts_open(++argv, fts_options, 0)) == NULL)
+  if ((ftsp = fts_open(argv, fts_options, 0)) == NULL)
     err(1, NULL);
 
   if(rootflg && Rflag && !strcmp(*argv, "/"))
