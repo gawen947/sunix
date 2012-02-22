@@ -85,7 +85,7 @@ static char emptystring[] = "";
 PATH_T to = { to.p_path, emptystring, "" };
 
 static int fflag, iflag, lflag, nflag, pflag, vflag;
-static int Rflag, rflag;
+static int Rflag;
 volatile sig_atomic_t info;
 
 enum op { FILE_TO_FILE, FILE_TO_DIR, DIR_TO_DNE };
@@ -438,6 +438,7 @@ int main(int argc, char *argv[])
       Hflag = Lflag = 0;
       break;
     case 'R':
+    case 'r':
       Rflag = 1;
       break;
     case 'a':
@@ -464,10 +465,6 @@ int main(int argc, char *argv[])
     case 'p':
       pflag = 1;
       break;
-    case 'r':
-      rflag = Lflag = 1;
-      Hflag = Pflag = 0;
-      break;
     case 'v':
       vflag = 1;
       break;
@@ -485,10 +482,6 @@ int main(int argc, char *argv[])
   if (argc < 2)
     usage();
 
-  if (Rflag && rflag)
-    errx(1, "the -R and -r options may not be specified together");
-  if (rflag)
-    Rflag = 1;
   if (Rflag) {
     if (Hflag)
       fts_options |= FTS_COMFOLLOW;
