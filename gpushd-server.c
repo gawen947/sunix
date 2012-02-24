@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2011-11-04 16:40:46 gawen>
+   Time-stamp: <2012-02-24 19:09:21 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -74,7 +74,8 @@ enum s_magic {
  */
 
 #define MAX_CONCURRENCY 16
-#define MAX_STACK       65535
+#define MAX_STACK       UINT16_MAX
+#define MAX_ENTRY       UINT16_MAX
 
 #define CHECK_BIT(bit, flag) ((flag) & (1 << (bit)))
 #define SET_BIT(bit, flag) ((flag) |= (1 << (bit)))
@@ -116,8 +117,7 @@ static struct dir_stack {
 
   struct d_node {
     struct d_node *next;
-
-    char d_path[MAX_PATH];
+    char *entry;
   } *dirs;
 } stack;
 
@@ -202,9 +202,9 @@ static void swap_save(const char *swap_file)
   swap_write_stats(fd);
 
   for(; c != NULL ; c = c->next) {
-    uint8_t size = strlen(c->d_path);
-    xwrite(fd, &size, sizeof(uint8_t));
-    xwrite(fd, c->d_path, size);
+    uint16_t size = strlen(c->entry);
+    xwrite(fd, &size, sizeof(uint16_t));
+    xwrite(fd, c->entry, size);
   }
 
   close(fd);
@@ -243,13 +243,14 @@ static void swap_load(const char *swap_file)
 
   while(1) {
     struct d_node *new = xmalloc(sizeof(struct d_node));
-    uint8_t size;
-    size_t n = xread(fd, &size, sizeof(uint8_t));
+    uint16_t size;
+    size_t n = xread(fd, &size, sizeof(uint16_t));
 
     if(!n)
       break;
 
-    n = xread(fd, new->d_path, size);
+    new->entry = xmalloc(size);
+    n = xread(fd, new->entry, size);
     if(n != size)
       errx(EXIT_FAILURE, "invalid swap file");
 
@@ -259,6 +260,7 @@ static void swap_load(const char *swap_file)
         sem_post(&stack.mutex);
         warnx("stack full");
         close(fd);
+        free(new->entry);
         free(new);
         return;
       }
@@ -325,8 +327,8 @@ static void s_send_error(int cli, int code)
 static bool cmd_push(int cli, struct message *request)
 {
   struct d_node *new = xmalloc(sizeof(struct d_node));
-
-  strcpy(new->d_path, request->p_string);
+  new->entry = xmalloc(strlen(request->p_string));
+  strcpy(new->entry, request->p_string);
 
   /* stack critical read-write section */
   sem_wait(&stack.mutex);
@@ -334,6 +336,7 @@ static bool cmd_push(int cli, struct message *request)
     if(stack.size == MAX_STACK) {
       sem_post(&stack.mutex);  /* release early */
       s_send_error(cli, E_FULL);
+      free(new->entry);
       free(new);
       return true;
     }
@@ -379,6 +382,7 @@ static bool cmd_pop(int cli, struct message *request)
     else
       o->next = c->next;
     stack.size--;
+    free(c->entry);
     free(c);
   }
   sem_post(&stack.mutex);
@@ -386,7 +390,7 @@ static bool cmd_pop(int cli, struct message *request)
   /* we don't send the response
      inside the critical section */
   write(cli, &cmd, sizeof(char));
-  write(cli, result.d_path, strlen(result.d_path) + 1);
+  write(cli, result.entry, strlen(result.entry) + 1);
   stats.nb_snd++;
 
   return true;
@@ -412,6 +416,7 @@ static bool cmd_popf(int cli, struct message *request)
 
     stack.dirs = c->next;
     result = *c;
+    free(c->entry);
     free(c);
   }
   sem_post(&stack.mutex);
@@ -419,7 +424,7 @@ static bool cmd_popf(int cli, struct message *request)
   /* again, we don't send the response
      inside the critical section */
   write(cli, &cmd, sizeof(char));
-  write(cli, result.d_path, strlen(result.d_path) + 1);
+  write(cli, result.entry, strlen(result.entry) + 1);
   stats.nb_snd++;
 
   return true;
@@ -474,7 +479,7 @@ static bool cmd_get(int cli, struct message *request)
   /* again, we don't send the response
      inside the critical section */
   write(cli, &cmd, sizeof(char));
-  write(cli, result.d_path, strlen(result.d_path) + 1);
+  write(cli, result.entry, strlen(result.entry) + 1);
   stats.nb_snd++;
 
   return true;
@@ -503,7 +508,7 @@ static bool cmd_getf(int cli, struct message *request)
   /* again, we don't send the response
      inside the critical section */
   write(cli, &cmd, sizeof(char));
-  write(cli, result.d_path, strlen(result.d_path) + 1);
+  write(cli, result.entry, strlen(result.entry) + 1);
   stats.nb_snd++;
 
   return true;
@@ -660,7 +665,7 @@ static bool cmd_getall(int cli, struct message *request)
        the message inside the critical section */
     for(; c != NULL ; c = c->next) {
       write(cli, &cmd, sizeof(char));
-      write(cli, c->d_path, strlen(c->d_path) + 1);
+      write(cli, c->entry, strlen(c->entry) + 1);
       stats.nb_snd++;
     }
   }
