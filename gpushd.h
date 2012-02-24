@@ -1,5 +1,5 @@
 /* File: gpushd.h
-   Time-stamp: <2011-11-04 12:18:19 gawen>
+   Time-stamp: <2012-02-24 19:46:05 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -31,8 +31,8 @@
 #ifndef _GPUSHD_H_
 #define _GPUSHD_H_
 
-#define MAX_PATH 256
 #define REQUEST_TIMEOUT 1
+#define MAX_ENTRY       UINT16_MAX
 
 enum cmd { CMD_QUIT,
            CMD_END,

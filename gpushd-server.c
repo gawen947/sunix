@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2012-02-24 19:09:21 gawen>
+   Time-stamp: <2012-02-24 19:48:18 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -90,13 +90,13 @@ static struct thread_pool {
   pthread_t threads[MAX_CONCURRENCY]; /* threads */
   int       fd_cli[MAX_CONCURRENCY];  /* client file descriptor */
   uint16_t  st_threads;               /* threads state */
-  sem_t     st_mutex;                 /* mutex for threads */
+  pthread_mutex_t st_mutex;           /* mutex for threads */
 
-  pthread_t cleaner;                  /* cleaner thread */
-  sem_t clr_mutex;                    /* mutex for cleaner state */
-  sem_t clr_bell;                     /* call the cleaner thread */
-  sem_t clr_done[MAX_CONCURRENCY];    /* clean threads */
-  uint16_t st_cleaner;                /* cleaner thread state */
+  pthread_t cleaner;                         /* cleaner thread */
+  pthread_mutex_t clr_mutex;                 /* mutex for cleaner state */
+  pthread_mutex_t clr_bell;                  /* call the cleaner thread */
+  pthread_mutex_t clr_done[MAX_CONCURRENCY]; /* clean threads */
+  uint16_t st_cleaner;                       /* cleaner thread state */
 } pool;
 
 static struct stats {
@@ -112,7 +112,7 @@ static struct stats {
 } stats;
 
 static struct dir_stack {
-  sem_t mutex;
+  pthread_mutex_t  mutex;
   size_t size;
 
   struct d_node {
@@ -120,6 +120,12 @@ static struct dir_stack {
     char *entry;
   } *dirs;
 } stack;
+
+static void free_node(struct d_node *node)
+{
+  free(node->entry);
+  free(node);
+}
 
 static void swap_write_stats(int fd)
 {
@@ -197,7 +203,7 @@ static void swap_save(const char *swap_file)
   xwrite(fd, &version, sizeof(uint32_t));
 
   /* close stack until exit */
-  sem_wait(&stack.mutex);
+  pthread_mutex_lock(&stack.mutex);
 
   swap_write_stats(fd);
 
@@ -254,14 +260,13 @@ static void swap_load(const char *swap_file)
     if(n != size)
       errx(EXIT_FAILURE, "invalid swap file");
 
-    sem_wait(&stack.mutex);
+    pthread_mutex_lock(&stack.mutex);
     {
       if(stack.size == MAX_STACK) {
-        sem_post(&stack.mutex);
+        pthread_mutex_unlock(&stack.mutex);
         warnx("stack full");
         close(fd);
-        free(new->entry);
-        free(new);
+        free_node(new);
         return;
       }
 
@@ -274,7 +279,7 @@ static void swap_load(const char *swap_file)
       last = new;
       stack.size++;
     }
-    sem_post(&stack.mutex);
+    pthread_mutex_unlock(&stack.mutex);
   }
 
   close(fd);
@@ -331,13 +336,12 @@ static bool cmd_push(int cli, struct message *request)
   strcpy(new->entry, request->p_string);
 
   /* stack critical read-write section */
-  sem_wait(&stack.mutex);
+  pthread_mutex_lock(&stack.mutex);
   {
     if(stack.size == MAX_STACK) {
-      sem_post(&stack.mutex);  /* release early */
+      pthread_mutex_unlock(&stack.mutex);  /* release early */
       s_send_error(cli, E_FULL);
-      free(new->entry);
-      free(new);
+      free_node(new);
       return true;
     }
 
@@ -345,7 +349,7 @@ static bool cmd_push(int cli, struct message *request)
     stack.dirs = new;
     stack.size++;
   }
-  sem_post(&stack.mutex);
+  pthread_mutex_unlock(&stack.mutex);
 
   return true;
 }
@@ -358,11 +362,11 @@ static bool cmd_pop(int cli, struct message *request)
   char cmd = CMD_RESPS;
 
   /* stack critical read-write section */
-  sem_wait(&stack.mutex);
+  pthread_mutex_lock(&stack.mutex);
   {
     for(i = 0 ; i < j ; i++, c = c->next) {
       if(c == NULL) {
-        sem_post(&stack.mutex); /* release early */
+        pthread_mutex_unlock(&stack.mutex); /* release early */
         if(stack.size)
           s_send_error(cli, E_NFOUND);
         else
@@ -382,10 +386,9 @@ static bool cmd_pop(int cli, struct message *request)
     else
       o->next = c->next;
     stack.size--;
-    free(c->entry);
-    free(c);
+    free_node(c);
   }
-  sem_post(&stack.mutex);
+  pthread_mutex_unlock(&stack.mutex);
 
   /* we don't send the response
      inside the critical section */
@@ -403,10 +406,10 @@ static bool cmd_popf(int cli, struct message *request)
   char cmd = CMD_RESPS;
 
   /* stack critical read section */
-  sem_wait(&stack.mutex);
+  pthread_mutex_lock(&stack.mutex);
   {
     if(!stack.dirs) {
-      sem_post(&stack.mutex);
+      pthread_mutex_unlock(&stack.mutex);
       if(stack.size)
         s_send_error(cli, E_NFOUND);
       else
@@ -416,10 +419,9 @@ static bool cmd_popf(int cli, struct message *request)
 
     stack.dirs = c->next;
     result = *c;
-    free(c->entry);
-    free(c);
+    free_node(c);
   }
-  sem_post(&stack.mutex);
+  pthread_mutex_unlock(&stack.mutex);
 
   /* again, we don't send the response
      inside the critical section */
@@ -435,18 +437,18 @@ static bool cmd_clean(int cli, struct message *request)
   struct d_node *c = stack.dirs;
 
   /* stack critical write section */
-  sem_wait(&stack.mutex);
+  pthread_mutex_lock(&stack.mutex);
   {
     while(c != NULL) {
       struct d_node *o = c;
 
       c = c->next;
-      free(o);
+      free_node(o);
     }
     stack.dirs = NULL;
     stack.size = 0;
   }
-  sem_post(&stack.mutex);
+  pthread_mutex_unlock(&stack.mutex);
 
   return true;
 }
@@ -459,11 +461,11 @@ static bool cmd_get(int cli, struct message *request)
   char cmd = CMD_RESPS;
 
   /* stack critical read section */
-  sem_wait(&stack.mutex);
+  pthread_mutex_lock(&stack.mutex);
   {
     for(i = 0 ; i < j ; i++, c = c->next) {
       if(c == NULL) {
-        sem_post(&stack.mutex); /* release early */
+        pthread_mutex_unlock(&stack.mutex); /* release early */
         if(stack.size)
           s_send_error(cli, E_NFOUND);
         else
@@ -474,7 +476,7 @@ static bool cmd_get(int cli, struct message *request)
 
     result = *c;
   }
-  sem_post(&stack.mutex);
+  pthread_mutex_unlock(&stack.mutex);
 
   /* again, we don't send the response
      inside the critical section */
@@ -491,10 +493,10 @@ static bool cmd_getf(int cli, struct message *request)
   char cmd = CMD_RESPS;
 
   /* stack critical read section */
-  sem_wait(&stack.mutex);
+  pthread_mutex_lock(&stack.mutex);
   {
     if(!stack.dirs) {
-      sem_post(&stack.mutex);
+      pthread_mutex_unlock(&stack.mutex);
       if(stack.size)
         s_send_error(cli, E_NFOUND);
       else
@@ -503,7 +505,7 @@ static bool cmd_getf(int cli, struct message *request)
     }
     result = *stack.dirs;
   }
-  sem_post(&stack.mutex);
+  pthread_mutex_unlock(&stack.mutex);
 
   /* again, we don't send the response
      inside the critical section */
@@ -520,11 +522,11 @@ static bool cmd_size(int cli, struct message *request)
   char cmd = CMD_RESPI;
 
   /* stack critical read section */
-  sem_wait(&stack.mutex);
+  pthread_mutex_lock(&stack.mutex);
   {
     size = stack.size;
   }
-  sem_post(&stack.mutex);
+  pthread_mutex_unlock(&stack.mutex);
 
   write(cli, &cmd, sizeof(char));
   write(cli, &size, sizeof(int));
@@ -659,7 +661,7 @@ static bool cmd_getall(int cli, struct message *request)
   char cmd = CMD_RESPS;
 
   /* stack critical read section */
-  sem_wait(&stack.mutex);
+  pthread_mutex_lock(&stack.mutex);
   {
     /* we got no choice here but to send
        the message inside the critical section */
@@ -669,7 +671,7 @@ static bool cmd_getall(int cli, struct message *request)
       stats.nb_snd++;
     }
   }
-  sem_post(&stack.mutex);
+  pthread_mutex_unlock(&stack.mutex);
 
   return true;
 }
@@ -784,15 +786,15 @@ static void * new_cli(void *arg)
   close(pool.fd_cli[idx]);
 
   /* signal the cleaner thread */
-  sem_wait(&pool.clr_mutex);
+  pthread_mutex_lock(&pool.clr_mutex);
   SET_BIT(idx, pool.st_cleaner);
-  sem_post(&pool.clr_mutex);
-  sem_post(&pool.clr_bell);
+  pthread_mutex_unlock(&pool.clr_mutex);
+  pthread_mutex_unlock(&pool.clr_bell);
 
   /* free the thread slot */
-  sem_wait(&pool.st_mutex);
+  pthread_mutex_lock(&pool.st_mutex);
   CLEAR_BIT(idx, pool.st_threads);
-  sem_post(&pool.st_mutex);
+  pthread_mutex_unlock(&pool.st_mutex);
   sem_post(&pool.available);
 
   alarm(0);
@@ -839,12 +841,12 @@ static void server(const char *sock_path)
         i = (i + 1) % MAX_CONCURRENCY);
 
     /* wait for it to be cleaned */
-    sem_wait(&pool.clr_done[i]);
+    pthread_mutex_lock(&pool.clr_done[i]);
 
     /* setup client thread */
-    sem_wait(&pool.st_mutex);
+    pthread_mutex_lock(&pool.st_mutex);
     SET_BIT(i, pool.st_threads);
-    sem_post(&pool.st_mutex);
+    pthread_mutex_unlock(&pool.st_mutex);
     pool.fd_cli[i] = fd;
 
     if(pthread_create(&pool.threads[i], NULL, new_cli, (void *)(long)i))
@@ -861,15 +863,15 @@ static void * cleaner_thread(void *null)
   while(1) {
     int i;
 
-    sem_wait(&pool.clr_bell);
+    pthread_mutex_lock(&pool.clr_bell);
     for(i = 0 ; i < MAX_CONCURRENCY ; i++) {
       if(CHECK_BIT(i, pool.st_cleaner)) {
-        sem_wait(&pool.clr_mutex);
+        pthread_mutex_lock(&pool.clr_mutex);
         CLEAR_BIT(i, pool.st_cleaner);
-        sem_post(&pool.clr_mutex);
+        pthread_mutex_unlock(&pool.clr_mutex);
 
         pthread_join(pool.threads[i], NULL);
-        sem_post(&pool.clr_done[i]);
+        pthread_mutex_unlock(&pool.clr_done[i]);
       }
     }
   }
@@ -887,17 +889,18 @@ int main(int argc, const char *argv[])
     errx(EXIT_FAILURE, "usage <socket-path> [swap-path]");
 
   while(n--)
-    xsem_init(&pool.clr_done[n], 0, 1);
+    pthread_mutex_init(&pool.clr_done[n], NULL);
   xsem_init(&pool.available, 0, MAX_CONCURRENCY);
-  xsem_init(&pool.st_mutex, 0, 1);
-  xsem_init(&pool.clr_bell, 0, 0);
-  xsem_init(&pool.clr_mutex, 0, 1);
-  xsem_init(&stack.mutex, 0, 1);
+
+  pthread_mutex_init(&pool.st_mutex, NULL);
+  pthread_mutex_init(&pool.clr_bell, NULL);
+  pthread_mutex_init(&pool.clr_mutex, NULL);
+  pthread_mutex_init(&stack.mutex, NULL);
+  pthread_mutex_lock(&pool.clr_bell);
 
   /* unlink socket on exit */
   sigfillset(&act.sa_mask);
-  sigaction(SIGQUIT, &act, NULL);
-  sigaction(SIGTSTP, &act, NULL);
+  sigaction(SIGTERM, &act, NULL);
   sigaction(SIGINT, &act, NULL);
   sigaction(SIGSTOP, &act, NULL);
   sigaction(SIGKILL, &act, NULL);
