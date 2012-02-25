@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2012-02-25 20:14:12 gawen>
+   Time-stamp: <2012-02-25 20:39:51 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -70,7 +70,7 @@
 enum s_magic {
   GPUSHD_SWAP_MAGIK1  = 0x48535047, /* GPSH */
   GPUSHD_SWAP_MAGIK2  = 0x50415753, /* SWAP */
-  GPUSHD_SWAP_VERSION = 0x00000001 };
+  GPUSHD_SWAP_VERSION = 0x00000002 };
 
 /*
  * TODO:
@@ -142,27 +142,31 @@ static void free_node(struct d_node *node)
   free(node);
 }
 
+static int xiobuf_close(iofile_t file)
+{
+  int ret = iobuf_close(file);
+  if(ret < 0)
+    err(EXIT_FAILURE, "iobuf_close");
+  return ret;
+}
+
 static size_t xiobuf_write(iofile_t file, const void *buf, size_t count)
 {
   size_t ret = iobuf_write(file, buf, count);
-  if(ret != count)
+  if(ret != count) {
+    iobuf_close(file);
     err(EXIT_FAILURE, "iobuf_write");
+  }
   return ret;
 }
 
 static size_t xiobuf_read(iofile_t file, void *buf, size_t count)
 {
   size_t ret = iobuf_read(file, buf, count);
-  if(ret < 0)
+  if(ret < 0) {
+    iobuf_close(file);
     err(EXIT_FAILURE, "iobuf_read");
-  return ret;
-}
-
-static int xiobuf_close(iofile_t file)
-{
-  int ret = iobuf_close(file);
-  if(ret < 0)
-    err(EXIT_FAILURE, "iobuf_close");
+  }
   return ret;
 }
 
@@ -258,35 +262,53 @@ static void swap_save(const char *swap_file)
   xiobuf_close(file);
 }
 
-static void swap_load(const char *swap_file)
+/* Migration code */
+static void swap_load_1(iofile_t file)
 {
-  iofile_t file;
   struct d_node *last = NULL;
-  uint32_t magik1;
-  uint32_t magik2;
-  uint32_t version;
 
-  file = iobuf_open(swap_file, O_RDONLY, 0);
-  if(!file)
-    return;
+  swap_read_stats(file);
 
-  xiobuf_read(file, &magik1, sizeof(uint32_t));
-  xiobuf_read(file, &magik2, sizeof(uint32_t));
-  xiobuf_read(file, &version, sizeof(uint32_t));
-  magik1  = le32toh(magik1);
-  magik2  = le32toh(magik2);
-  version = le32toh(version);
+  while(1) {
+    struct d_node *new = xmalloc(sizeof(struct d_node));
+    uint8_t size;
+    size_t n = xiobuf_read(file, &size, sizeof(uint8_t));
 
-  if(magik1 != GPUSHD_SWAP_MAGIK1 && magik2 != GPUSHD_SWAP_MAGIK2) {
-    printf("%x\n", magik1);
-    warnx("bad magik number in swap file");
-    return;
+    if(!n)
+      break;
+
+    new->entry = xmalloc(size);
+    n = xiobuf_read(file, new->entry, size);
+    if(n != size)
+      errx(EXIT_FAILURE, "invalid swap file");
+
+    pthread_mutex_lock(&stack.mutex);
+    {
+      if(stack.size == MAX_STACK) {
+        pthread_mutex_unlock(&stack.mutex);
+        warnx("Stack full");
+        xiobuf_close(file);
+        free_node(new);
+        return;
+      }
+
+      new->next = NULL;
+
+      if(!last)
+        stack.dirs = new;
+      else
+        last->next = new;
+      last = new;
+      stack.size++;
+    }
+    pthread_mutex_unlock(&stack.mutex);
   }
+}
 
-  if(version > GPUSHD_SWAP_VERSION) {
-    warnx("version too high in swap file");
-    return;
-  }
+/* Current version swap file loader */
+static void swap_load_2(iofile_t file)
+{
+  struct d_node *last = NULL;
 
   swap_read_stats(file);
 
@@ -307,7 +329,7 @@ static void swap_load(const char *swap_file)
     {
       if(stack.size == MAX_STACK) {
         pthread_mutex_unlock(&stack.mutex);
-        warnx("stack full");
+        warnx("Stack full");
         xiobuf_close(file);
         free_node(new);
         return;
@@ -324,7 +346,50 @@ static void swap_load(const char *swap_file)
     }
     pthread_mutex_unlock(&stack.mutex);
   }
+}
 
+static void swap_load(const char *swap_file)
+{
+  iofile_t file;
+  uint32_t magik1;
+  uint32_t magik2;
+  uint32_t version;
+
+  file = iobuf_open(swap_file, O_RDONLY, 0);
+  if(!file)
+    return;
+
+  xiobuf_read(file, &magik1, sizeof(uint32_t));
+  xiobuf_read(file, &magik2, sizeof(uint32_t));
+  xiobuf_read(file, &version, sizeof(uint32_t));
+  magik1  = le32toh(magik1);
+  magik2  = le32toh(magik2);
+  version = le32toh(version);
+
+  if(magik1 != GPUSHD_SWAP_MAGIK1 && magik2 != GPUSHD_SWAP_MAGIK2) {
+    printf("%x\n", magik1);
+    warnx("bad magik number in swap file");
+    goto CLOSE;
+  }
+
+  if(version != GPUSHD_SWAP_VERSION)
+    warnx("migrating swap file from version %d to version %d", version,
+          GPUSHD_SWAP_VERSION);
+
+  switch(version) {
+  case(1):
+    swap_load_1(file);
+    break;
+  case(2):
+    swap_load_2(file);
+    break;
+  default:
+    warnx("unknown swap file version %d ; current is %d", version,
+          GPUSHD_SWAP_VERSION);
+    break;
+  }
+
+CLOSE:
   xiobuf_close(file);
 }
 
