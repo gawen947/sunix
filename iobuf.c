@@ -1,5 +1,5 @@
 /* File: iobuf.c
-   Time-stamp: <2012-02-25 20:14:30 gawen>
+   Time-stamp: <2012-02-26 00:18:53 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -70,7 +70,7 @@ size_t iobuf_flush(iofile_t file)
 
 iofile_t iobuf_open(const char *pathname, int flags, mode_t mode)
 {
-  struct iofile *file = malloc(sizeof(struct iofile) + IOBUF_SIZE * 2);
+  struct iofile *file = malloc(sizeof(struct iofile));
   if(!file)
     return NULL;
 

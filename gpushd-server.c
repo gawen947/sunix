@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2012-02-25 22:07:15 gawen>
+   Time-stamp: <2012-02-26 00:18:42 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -256,8 +256,9 @@ static void swap_save(const char *swap_file)
 
   for(; c != NULL ; c = c->next) {
     uint16_t size = strlen(c->entry);
+    uint16_t us   = htole32(size);
 
-    xiobuf_write(file, &size, sizeof(uint16_t));
+    xiobuf_write(file, &us, sizeof(us));
     xiobuf_write(file, c->entry, size);
   }
 
@@ -279,8 +280,10 @@ static void swap_load_1(iofile_t file)
     if(!n)
       break;
 
-    new->entry = xmalloc(size);
+    new->entry = xmalloc(size + 1);
     n = xiobuf_read(file, new->entry, size);
+    new->entry[size] = '\0';
+
     if(n != size)
       errx(EXIT_FAILURE, "invalid swap file");
 
@@ -317,13 +320,17 @@ static void swap_load_2(iofile_t file)
   while(1) {
     struct d_node *new = xmalloc(sizeof(struct d_node));
     uint16_t size;
-    size_t n = xiobuf_read(file, &size, sizeof(uint16_t));
+    size_t n = xiobuf_read(file, &size, sizeof(size));
 
     if(!n)
       break;
 
-    new->entry = xmalloc(size);
+    size = le32toh(size);
+
+    new->entry = xmalloc(size + 1);
     n = xiobuf_read(file, new->entry, size);
+    new->entry[size] = '\0';
+
     if(n != size)
       errx(EXIT_FAILURE, "invalid swap file");
 
@@ -369,7 +376,6 @@ static void swap_load(const char *swap_file)
   version = le32toh(version);
 
   if(magik1 != GPUSHD_SWAP_MAGIK1 && magik2 != GPUSHD_SWAP_MAGIK2) {
-    printf("%x\n", magik1);
     warnx("bad magik number in swap file");
     goto CLOSE;
   }

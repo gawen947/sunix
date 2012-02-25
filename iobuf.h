@@ -40,7 +40,7 @@ typedef struct iofile * iofile_t;
    subject to the same semantic that the ones used in open. */
 iofile_t iobuf_open(const char *pathname, int flags, mode_t mode);
 
-/* Write up to count bytes from the buffer pointed buf to the stream
+/* Write up to count bytes from the buffer pointer buf to the stream
    referred to by file. This is done through an user-space buffer in
    order to avoid useless syscall switch to kernel mode. */
 size_t iobuf_write(iofile_t file, const void *buf, size_t count);
