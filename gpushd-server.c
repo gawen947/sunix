@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2012-02-25 20:39:51 gawen>
+   Time-stamp: <2012-02-25 22:07:15 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -112,6 +112,8 @@ static struct thread_pool {
   pthread_mutex_t clr_bell;                  /* call the cleaner thread */
   pthread_mutex_t clr_done[MAX_CONCURRENCY]; /* clean threads */
   uint16_t st_cleaner;                       /* cleaner thread state */
+
+  bool dirty;                                /* swap file dirty flag */
 } pool;
 
 static struct stats {
@@ -422,10 +424,17 @@ static void signal_clean(int signum)
 
 static void signal_timer(int signum)
 {
+  /* The dirty flag is set up when a new request comes up
+     and reset when the stack and stats are swapped out
+     to disk. */
+  if(!pool.dirty)
+    return;
+
   /* swap out */
   if(swap_path)
     swap_save(swap_path);
   pthread_mutex_unlock(&stack.mutex);
+  pool.dirty = false;
 }
 
 static void s_send_error(int cli, int code)
@@ -920,6 +929,8 @@ static void * new_cli(void *arg)
                              .p_idx = 0 };
 
   clock_gettime(CLOCK_MONOTONIC, &begin);
+
+  pool.dirty = true;
 
   while(parse(pool.fd_cli[idx], &cli, proceed_request));
   clean_thread(idx);

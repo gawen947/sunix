@@ -1,5 +1,5 @@
 /* File: iobuf.h
-   Time-stamp: <2012-02-25 18:53:59 gawen>
+   Time-stamp: <2012-02-25 20:55:03 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -35,14 +35,30 @@
 
 typedef struct iofile * iofile_t;
 
+/* This opens the file whose name is the string pointed to by pathname
+   and associates a stream with it. The arguments flags and mode are
+   subject to the same semantic that the ones used in open. */
 iofile_t iobuf_open(const char *pathname, int flags, mode_t mode);
 
+/* Write up to count bytes from the buffer pointed buf to the stream
+   referred to by file. This is done through an user-space buffer in
+   order to avoid useless syscall switch to kernel mode. */
 size_t iobuf_write(iofile_t file, const void *buf, size_t count);
 
+/* Attemps to read up to count bytes from the stream referred to by
+   file. This is done through an user-space buffer in order to avoid
+   useless syscall switch to kernel mode. */
 size_t iobuf_read(iofile_t file, void *buf, size_t count);
 
+/* For output streams, iobuf_flush forces a write of all user-space
+   buffered data for the given output. As the standard fflush function
+   the kernel buffers are not flushed so you may need to sync manually.
+   Unlike the standard fflush function this function does not discards
+   the read buffer and only affects the write buffer. */
 size_t iobuf_flush(iofile_t file);
 
+/* Close a stream. This function also take care of flushing the buffers
+   when needed. */
 int iobuf_close(iofile_t file);
 
 #endif /* _IOBUF_H_ */
