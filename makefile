@@ -113,7 +113,7 @@ chown: chown.c record-invalid.c
 rmdir: rmdir.c record-invalid.c
 	$(CC) $(CFLAGS) $^ -o $@
 
-gpushd-server: safe-call.c safe-call.h gpushd.h gpushd-server.c gpushd-common.c gpushd-common.h
+gpushd-server: safe-call.c safe-call.h gpushd.h gpushd-server.c gpushd-common.c gpushd-common.h iobuf.c iobuf.h
 	$(CC) $(CFLAGS) -pthread -lrt -DUSE_THREAD=1 -DNDEBUG=1 $^ -o $@
 
 gpushd-client: safe-call.c safe-call.h gpushd.h gpushd-client.c gpushd-common.c gpushd-common.h

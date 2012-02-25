@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2012-02-25 15:04:45 gawen>
+   Time-stamp: <2012-02-25 20:14:12 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -64,6 +64,7 @@
 
 #include "gpushd-common.h"
 #include "safe-call.h"
+#include "iobuf.h"
 #include "gpushd.h"
 
 enum s_magic {
@@ -141,115 +142,143 @@ static void free_node(struct d_node *node)
   free(node);
 }
 
-static void swap_write_stats(int fd)
+static size_t xiobuf_write(iofile_t file, const void *buf, size_t count)
+{
+  size_t ret = iobuf_write(file, buf, count);
+  if(ret != count)
+    err(EXIT_FAILURE, "iobuf_write");
+  return ret;
+}
+
+static size_t xiobuf_read(iofile_t file, void *buf, size_t count)
+{
+  size_t ret = iobuf_read(file, buf, count);
+  if(ret < 0)
+    err(EXIT_FAILURE, "iobuf_read");
+  return ret;
+}
+
+static int xiobuf_close(iofile_t file)
+{
+  int ret = iobuf_close(file);
+  if(ret < 0)
+    err(EXIT_FAILURE, "iobuf_close");
+  return ret;
+}
+
+static void swap_write_stats(iofile_t file)
 {
   uint32_t ul;
   uint64_t ull;
 
   ul = htole32(stats.nb_cli);
-  xwrite(fd, &ul, sizeof(ul));
+  xiobuf_write(file, &ul, sizeof(ul));
 
   ul = htole32(stats.nb_srv);
-  xwrite(fd, &ul, sizeof(ul));
+  xiobuf_write(file, &ul, sizeof(ul));
 
   ul = htole32(stats.nb_rcv);
-  xwrite(fd, &ul, sizeof(ul));
+  xiobuf_write(file, &ul, sizeof(ul));
 
   ul = htole32(stats.nb_snd);
-  xwrite(fd, &ul, sizeof(ul));
+  xiobuf_write(file, &ul, sizeof(ul));
 
   ul = htole32(stats.nb_err);
-  xwrite(fd, &ul, sizeof(ul));
+  xiobuf_write(file, &ul, sizeof(ul));
 
   ul = htole32(stats.max_nsec);
-  xwrite(fd, &ul, sizeof(ul));
+  xiobuf_write(file, &ul, sizeof(ul));
 
   ul = htole32(stats.min_nsec);
-  xwrite(fd, &ul, sizeof(ul));
+  xiobuf_write(file, &ul, sizeof(ul));
 
   ull = htole64(stats.sum_nsec);
-  xwrite(fd, &ull, sizeof(ull));
+  xiobuf_write(file, &ul, sizeof(ull));
 }
 
-static void swap_read_stats(int fd)
+static void swap_read_stats(iofile_t file)
 {
   uint32_t ul;
   uint64_t ull;
 
-  xread(fd, &ul, sizeof(ul));
+  xiobuf_read(file, &ul, sizeof(ul));
   stats.nb_cli = le32toh(ul);
 
-  xread(fd, &ul, sizeof(ul));
+  xiobuf_read(file, &ul, sizeof(ul));
   stats.nb_srv = le32toh(ul);
 
-  xread(fd, &ul, sizeof(ul));
+  xiobuf_read(file, &ul, sizeof(ul));
   stats.nb_rcv = le32toh(ul);
 
-  xread(fd, &ul, sizeof(ul));
+  xiobuf_read(file, &ul, sizeof(ul));
   stats.nb_snd = le32toh(ul);
 
-  xread(fd, &ul, sizeof(ul));
+  xiobuf_read(file, &ul, sizeof(ul));
   stats.nb_err = le32toh(ul);
 
-  xread(fd, &ul, sizeof(ul));
+  xiobuf_read(file, &ul, sizeof(ul));
   stats.max_nsec = le32toh(ul);
 
-  xread(fd, &ul, sizeof(ul));
+  xiobuf_read(file, &ul, sizeof(ul));
   stats.min_nsec = le32toh(ul);
 
-  xread(fd, &ull, sizeof(ull));
+  xiobuf_read(file, &ull, sizeof(ull));
   stats.sum_nsec = le64toh(ull);
 }
 
 static void swap_save(const char *swap_file)
 {
+  iofile_t file;
   struct d_node *c = stack.dirs;
 
   uint32_t magik1  = htole32(GPUSHD_SWAP_MAGIK1);
   uint32_t magik2  = htole32(GPUSHD_SWAP_MAGIK2);
   uint32_t version = htole32(GPUSHD_SWAP_VERSION);
 
-  int fd = xopen(swap_file, O_CREAT | O_WRONLY | O_TRUNC,
-                 S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+  file = iobuf_open(swap_file, O_CREAT | O_WRONLY | O_TRUNC, 00666);
+  if(!file)
+    err(EXIT_FAILURE, "swap_save");
 
-  xwrite(fd, &magik1, sizeof(uint32_t));
-  xwrite(fd, &magik2, sizeof(uint32_t));
-  xwrite(fd, &version, sizeof(uint32_t));
+  xiobuf_write(file, &magik1,  sizeof(uint32_t));
+  xiobuf_write(file, &magik2,  sizeof(uint32_t));
+  xiobuf_write(file, &version, sizeof(uint32_t));
 
   /* close stack until exit */
   pthread_mutex_lock(&stack.mutex);
 
-  swap_write_stats(fd);
+  swap_write_stats(file);
 
   for(; c != NULL ; c = c->next) {
     uint16_t size = strlen(c->entry);
-    xwrite(fd, &size, sizeof(uint16_t));
-    xwrite(fd, c->entry, size);
+
+    xiobuf_write(file, &size, sizeof(uint16_t));
+    xiobuf_write(file, c->entry, size);
   }
 
-  close(fd);
+  xiobuf_close(file);
 }
 
 static void swap_load(const char *swap_file)
 {
+  iofile_t file;
   struct d_node *last = NULL;
   uint32_t magik1;
   uint32_t magik2;
   uint32_t version;
 
-  int fd = open(swap_file, O_RDONLY, 0);
-
-  if(fd < 0)
+  file = iobuf_open(swap_file, O_RDONLY, 0);
+  if(!file)
     return;
 
-  xread(fd, &magik1, sizeof(uint32_t));
-  xread(fd, &magik2, sizeof(uint32_t));
-  xread(fd, &version, sizeof(uint32_t));
+  xiobuf_read(file, &magik1, sizeof(uint32_t));
+  xiobuf_read(file, &magik2, sizeof(uint32_t));
+  xiobuf_read(file, &version, sizeof(uint32_t));
   magik1  = le32toh(magik1);
   magik2  = le32toh(magik2);
   version = le32toh(version);
 
   if(magik1 != GPUSHD_SWAP_MAGIK1 && magik2 != GPUSHD_SWAP_MAGIK2) {
+    printf("%x\n", magik1);
     warnx("bad magik number in swap file");
     return;
   }
@@ -259,18 +288,18 @@ static void swap_load(const char *swap_file)
     return;
   }
 
-  swap_read_stats(fd);
+  swap_read_stats(file);
 
   while(1) {
     struct d_node *new = xmalloc(sizeof(struct d_node));
     uint16_t size;
-    size_t n = xread(fd, &size, sizeof(uint16_t));
+    size_t n = xiobuf_read(file, &size, sizeof(uint16_t));
 
     if(!n)
       break;
 
     new->entry = xmalloc(size);
-    n = xread(fd, new->entry, size);
+    n = xiobuf_read(file, new->entry, size);
     if(n != size)
       errx(EXIT_FAILURE, "invalid swap file");
 
@@ -279,7 +308,7 @@ static void swap_load(const char *swap_file)
       if(stack.size == MAX_STACK) {
         pthread_mutex_unlock(&stack.mutex);
         warnx("stack full");
-        close(fd);
+        xiobuf_close(file);
         free_node(new);
         return;
       }
@@ -296,7 +325,7 @@ static void swap_load(const char *swap_file)
     pthread_mutex_unlock(&stack.mutex);
   }
 
-  close(fd);
+  xiobuf_close(file);
 }
 
 static uint64_t substract_nsec(const struct timespec *begin,
