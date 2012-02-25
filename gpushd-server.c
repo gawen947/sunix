@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2012-02-24 19:48:18 gawen>
+   Time-stamp: <2012-02-25 01:05:22 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -32,6 +32,7 @@
 #define _POSIX_SOURCE
 #define _POSIX_C_SOURCE 201111L
 
+#include <sys/time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/socket.h>
@@ -51,6 +52,8 @@
 #include <pthread.h>
 #include <signal.h>
 #include <fcntl.h>
+#include <getopt.h>
+#include <errno.h>
 #include <err.h>
 
 #ifdef __FreeBSD__
@@ -81,8 +84,16 @@ enum s_magic {
 #define SET_BIT(bit, flag) ((flag) |= (1 << (bit)))
 #define CLEAR_BIT(bit, flag) ((flag) &= ~(1 << (bit)))
 
+static const char *prog_name;
 static const char *sock_path;
 static const char *swap_path;
+static unsigned int synctime;
+
+struct opts_name {
+  char name_short;
+  const char *name_long;
+  const char *help;
+};
 
 static struct thread_pool {
   sem_t available;
@@ -310,6 +321,14 @@ static void exit_clean()
 static void signal_clean(int signum)
 {
   exit(EXIT_SUCCESS);
+}
+
+static void signal_timer(int signum)
+{
+  /* swap out */
+  if(swap_path)
+    swap_save(swap_path);
+  pthread_mutex_unlock(&stack.mutex);
 }
 
 static void cli_timeout(int signum)
@@ -770,16 +789,8 @@ static void * new_cli(void *arg)
   int idx = (long)arg;
   struct parse_state cli = { .state = ST_CMD,
                              .p_idx = 0 };
-  struct sigaction act   = { .sa_handler = cli_timeout,
-                             .sa_flags   = 0 };
 
   clock_gettime(CLOCK_MONOTONIC, &begin);
-
-  /* ensure this thread won't live more than REQUEST_TIMEOUT seconds */
-  sigfillset(&act.sa_mask);
-  sigaction(SIGALRM, &act, NULL);
-
-  alarm(REQUEST_TIMEOUT);
 
   while(parse(pool.fd_cli[idx], &cli, proceed_request));
 
@@ -796,8 +807,6 @@ static void * new_cli(void *arg)
   CLEAR_BIT(idx, pool.st_threads);
   pthread_mutex_unlock(&pool.st_mutex);
   sem_post(&pool.available);
-
-  alarm(0);
 
   clock_gettime(CLOCK_MONOTONIC, &end);
 
@@ -831,7 +840,13 @@ static void server(const char *sock_path)
   /* listen and backlog up to eight connections */
   xlisten(sd, 8);
   while(1) {
-    int i, fd = xaccept(sd, NULL, NULL);
+    int i, fd = accept(sd, NULL, NULL);
+
+    if(fd < 0) {
+      if(errno == EINTR)
+        continue;
+      err(EXIT_FAILURE, "accept error");
+    }
 
     /* wait for the first available thread */
     sem_wait(&pool.available);
@@ -879,14 +894,94 @@ static void * cleaner_thread(void *null)
   return NULL; /* we never get here */
 }
 
-int main(int argc, const char *argv[])
+/* Auto-Indentation of the standard help message
+   according to the options specified in names. */
+static void help(const struct opts_name *names)
 {
+  const struct opts_name *opt;
+  int size;
+  int max = 0;
+
+  /* basic usage */
+  fprintf(stderr, "Usage: %s [OPTIONS] [SOCKET-PATH]\n", prog_name);
+
+  /* maximum option name size for padding */
+  for(opt = names ; opt->name_long ; opt++) {
+    size = strlen(opt->name_long);
+    if(size > max)
+      max = size;
+  }
+
+  /* print options and help messages */
+  for(opt = names ; opt->name_long ; opt++) {
+    if(opt->name_short != 0)
+      fprintf(stderr, "  -%c, --%s", opt->name_short, opt->name_long);
+    else
+      fprintf(stderr, "      --%s", opt->name_long);
+
+    /* padding */
+    size = strlen(opt->name_long);
+    for(; size <= max ; size++)
+      fputc(' ', stderr);
+    fprintf(stderr, "%s\n", opt->help);
+  }
+}
+
+int main(int argc, char *argv[])
+{
+  int exit_status = EXIT_FAILURE;
   int n = MAX_CONCURRENCY;
+  struct itimerval timer;
+  struct sigaction tim = { .sa_handler = signal_timer };
   struct sigaction act = { .sa_handler = signal_clean,
                            .sa_flags   = 0 };
 
-  if(argc != 2 && argc != 3)
-    errx(EXIT_FAILURE, "usage <socket-path> [swap-path]");
+  /* This structure is mainly used for the help(...) function and
+     map options to their respective help message. */
+  struct opts_name names[] = {
+    { 's', "sync-time", "Sync the swap file every specified seconds" },
+    { 'h', "help",      "Show this help message" },
+    { 0, NULL, NULL }
+  };
+
+  /* geopt long options declaration */
+  struct option opts[] = {
+    { "sync-time", required_argument, NULL, 's' },
+    { "help",      no_argument,       NULL, 'h' },
+    { NULL, 0, NULL, 0 }
+  };
+
+  /* parse program name */
+  prog_name = (const char *)strrchr(argv[0], '/');
+  prog_name = prog_name ? (prog_name + 1) : argv[0];
+
+  while(1) {
+    int c = getopt_long(argc, argv, "s:h", opts, NULL);
+
+    if(c == -1)
+      break;
+
+    switch(c) {
+    case('s'):
+      synctime = atoi(optarg);
+      if(synctime < 0)
+        errx(EXIT_FAILURE, "invalid sync time");
+      break;
+    case('h'):
+      exit_status = EXIT_SUCCESS;
+    default:
+      help(names);
+      exit(exit_status);
+    }
+  }
+
+  argc -= optind;
+  argv += optind;
+
+  if(argc != 1 && argc != 2) {
+    help(names);
+    exit(EXIT_FAILURE);
+  }
 
   while(n--)
     pthread_mutex_init(&pool.clr_done[n], NULL);
@@ -907,6 +1002,7 @@ int main(int argc, const char *argv[])
   sigaction(SIGTERM, &act, NULL);
   sigaction(SIGSTOP, &act, NULL);
   sigaction(SIGINT, &act, NULL);
+  sigaction(SIGALRM, &tim, NULL);
 
   stats.min_nsec = UINT32_MAX;
 
@@ -914,13 +1010,21 @@ int main(int argc, const char *argv[])
   if(pthread_create(&pool.cleaner, NULL, cleaner_thread, NULL))
     err(EXIT_FAILURE, "cannot create thread");
 
-  if(argc == 3)
-    swap_path = argv[2];
-  sock_path = argv[1];
+  if(argc == 2)
+    swap_path = argv[1];
+  sock_path = argv[0];
   if(swap_path)
     swap_load(swap_path);
   stats.nb_srv++;
-  server(argv[1]);
+
+  /* itimer initialisation */
+  if(synctime > 0) {
+    timer.it_value.tv_sec  = timer.it_interval.tv_sec  = synctime;
+    timer.it_value.tv_usec = timer.it_interval.tv_usec = 0;
+    setitimer(ITIMER_REAL, &timer, NULL);
+  }
+
+  server(argv[0]);
 
   return EXIT_SUCCESS;
 }
