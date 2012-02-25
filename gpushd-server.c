@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2012-02-25 01:05:22 gawen>
+   Time-stamp: <2012-02-25 15:04:45 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -76,6 +76,7 @@ enum s_magic {
  *  - avoid duplicates
  */
 
+#define DEFAULT_TIMEOUT 1
 #define MAX_CONCURRENCY 16
 #define MAX_STACK       UINT16_MAX
 #define MAX_ENTRY       UINT16_MAX
@@ -88,6 +89,7 @@ static const char *prog_name;
 static const char *sock_path;
 static const char *swap_path;
 static unsigned int synctime;
+static unsigned int timeout = DEFAULT_TIMEOUT;
 
 struct opts_name {
   char name_short;
@@ -98,10 +100,11 @@ struct opts_name {
 static struct thread_pool {
   sem_t available;
   unsigned int idx;
-  pthread_t threads[MAX_CONCURRENCY]; /* threads */
-  int       fd_cli[MAX_CONCURRENCY];  /* client file descriptor */
-  uint16_t  st_threads;               /* threads state */
-  pthread_mutex_t st_mutex;           /* mutex for threads */
+  pthread_t threads[MAX_CONCURRENCY];        /* threads */
+  int       fd_cli[MAX_CONCURRENCY];         /* client file descriptor */
+  struct timespec start_ts[MAX_CONCURRENCY]; /* thread start time */
+  uint16_t  st_threads;                      /* threads state */
+  pthread_mutex_t st_mutex;                  /* mutex for threads */
 
   pthread_t cleaner;                         /* cleaner thread */
   pthread_mutex_t clr_mutex;                 /* mutex for cleaner state */
@@ -329,16 +332,6 @@ static void signal_timer(int signum)
   if(swap_path)
     swap_save(swap_path);
   pthread_mutex_unlock(&stack.mutex);
-}
-
-static void cli_timeout(int signum)
-{
-  /* one problem with that,
-     thread aborted but connection
-     stall : also note that this
-     doesn't work at all */
-  warnx("client timeout");
-  pthread_exit(NULL);
 }
 
 static void s_send_error(int cli, int code)
@@ -782,6 +775,48 @@ static bool proceed_request(int cli, struct message *request)
   return result;
 }
 
+static void clean_thread(int idx)
+{
+  close(pool.fd_cli[idx]);
+
+  /* signal the cleaner thread */
+  pthread_mutex_lock(&pool.clr_mutex);
+  SET_BIT(idx, pool.st_cleaner);
+  pthread_mutex_unlock(&pool.clr_mutex);
+
+  /* free the thread slot */
+  pthread_mutex_lock(&pool.st_mutex);
+  CLEAR_BIT(idx, pool.st_threads);
+  pthread_mutex_unlock(&pool.st_mutex);
+  sem_post(&pool.available);
+}
+
+/* When there are no more connections available
+   and the last incoming connection timedout on
+   semtimedwait() we check for any stalled
+   connection and we destroy it. */
+static void check_stalled(void)
+{
+  struct timespec now;
+  int i;
+
+  clock_gettime(CLOCK_MONOTONIC, &now);
+
+  for(i = 0 ; i < MAX_CONCURRENCY ; i++) {
+    struct timespec ts = pool.start_ts[i];
+    if(now.tv_sec > ts.tv_sec + timeout) {
+      pthread_cancel(pool.threads[i]);
+      clean_thread(i);
+    }
+  }
+
+  /* We signal the cleaner thread here.
+     We wait until we checked each slot
+     for a stalled connection so we
+     wake up the cleaner thread only once. */
+  pthread_mutex_unlock(&pool.clr_bell);
+}
+
 static void * new_cli(void *arg)
 {
   uint64_t req_nsec;
@@ -793,20 +828,7 @@ static void * new_cli(void *arg)
   clock_gettime(CLOCK_MONOTONIC, &begin);
 
   while(parse(pool.fd_cli[idx], &cli, proceed_request));
-
-  close(pool.fd_cli[idx]);
-
-  /* signal the cleaner thread */
-  pthread_mutex_lock(&pool.clr_mutex);
-  SET_BIT(idx, pool.st_cleaner);
-  pthread_mutex_unlock(&pool.clr_mutex);
-  pthread_mutex_unlock(&pool.clr_bell);
-
-  /* free the thread slot */
-  pthread_mutex_lock(&pool.st_mutex);
-  CLEAR_BIT(idx, pool.st_threads);
-  pthread_mutex_unlock(&pool.st_mutex);
-  sem_post(&pool.available);
+  clean_thread(idx);
 
   clock_gettime(CLOCK_MONOTONIC, &end);
 
@@ -818,6 +840,9 @@ static void * new_cli(void *arg)
   if(req_nsec < stats.min_nsec)
     stats.min_nsec = req_nsec;
   stats.sum_nsec += req_nsec;
+
+  /* We signal the cleaner thread here */
+  pthread_mutex_unlock(&pool.clr_bell);
 
   return NULL;
 }
@@ -840,6 +865,8 @@ static void server(const char *sock_path)
   /* listen and backlog up to eight connections */
   xlisten(sd, 8);
   while(1) {
+    struct timespec ts = { .tv_sec  = timeout,
+                           .tv_nsec = 0 };
     int i, fd = accept(sd, NULL, NULL);
 
     if(fd < 0) {
@@ -849,7 +876,21 @@ static void server(const char *sock_path)
     }
 
     /* wait for the first available thread */
-    sem_wait(&pool.available);
+    while(1) {
+      if(sem_timedwait(&pool.available, &ts) < 0) {
+        switch(errno) {
+        case(ETIMEDOUT):
+          check_stalled();
+          break;
+        case(EINTR):
+          break;
+        default:
+          err(EXIT_FAILURE, "sem_timedwait");
+        }
+      }
+      else
+        break; /* success */
+    }
 
     /* fix this, use T(16) at each turn */
     for(i = pool.idx ; CHECK_BIT(i, pool.st_threads) ;
@@ -873,6 +914,13 @@ static void server(const char *sock_path)
   }
 }
 
+/* We need to join threads to free associated
+   resources. When a new thread is created it
+   warns the cleaner thread through the clr_bell
+   mutex. This thread will then join on each
+   thread ready to be cleaned. This ensures that
+   we never have more than MAX_CONCURRENCY still
+   living in memory and consuming resources. */
 static void * cleaner_thread(void *null)
 {
   while(1) {
@@ -940,6 +988,7 @@ int main(int argc, char *argv[])
      map options to their respective help message. */
   struct opts_name names[] = {
     { 's', "sync-time", "Sync the swap file every specified seconds" },
+    { 't', "timeout",   "Time in seconds before a request timeout" },
     { 'h', "help",      "Show this help message" },
     { 0, NULL, NULL }
   };
@@ -947,6 +996,7 @@ int main(int argc, char *argv[])
   /* geopt long options declaration */
   struct option opts[] = {
     { "sync-time", required_argument, NULL, 's' },
+    { "timeout",   required_argument, NULL, 't' },
     { "help",      no_argument,       NULL, 'h' },
     { NULL, 0, NULL, 0 }
   };
@@ -956,7 +1006,7 @@ int main(int argc, char *argv[])
   prog_name = prog_name ? (prog_name + 1) : argv[0];
 
   while(1) {
-    int c = getopt_long(argc, argv, "s:h", opts, NULL);
+    int c = getopt_long(argc, argv, "s:t:h", opts, NULL);
 
     if(c == -1)
       break;
@@ -966,6 +1016,11 @@ int main(int argc, char *argv[])
       synctime = atoi(optarg);
       if(synctime < 0)
         errx(EXIT_FAILURE, "invalid sync time");
+      break;
+    case('t'):
+      timeout  = atoi(optarg);
+      if(timeout < 1)
+        errx(EXIT_FAILURE, "invalid timeout time");
       break;
     case('h'):
       exit_status = EXIT_SUCCESS;
