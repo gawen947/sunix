@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2012-02-26 01:41:35 gawen>
+   Time-stamp: <2012-02-26 01:53:25 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -485,17 +485,16 @@ static bool cmd_pop(int cli, struct message *request)
   /* stack critical read-write section */
   pthread_mutex_lock(&stack.mutex);
   {
-    for(i = 0 ; i < j ; i++, c = c->next) {
-      if(c == NULL) {
-        pthread_mutex_unlock(&stack.mutex); /* release early */
-        if(stack.size)
-          s_send_error(cli, E_NFOUND);
-        else
-          s_send_error(cli, E_EMPTY);
-        return true;
-      }
-
+    for(i = 0 ; i < j && c != NULL; i++, c = c->next)
       o = c;
+
+    if(c == NULL) {
+      pthread_mutex_unlock(&stack.mutex); /* release early */
+      if(stack.size)
+        s_send_error(cli, E_NFOUND);
+      else
+        s_send_error(cli, E_EMPTY);
+      return true;
     }
 
     /* save result */
@@ -507,7 +506,7 @@ static bool cmd_pop(int cli, struct message *request)
     else
       o->next = c->next;
     stack.size--;
-    free_node(c);
+    free(c);
   }
   pthread_mutex_unlock(&stack.mutex);
 
@@ -515,6 +514,7 @@ static bool cmd_pop(int cli, struct message *request)
      inside the critical section */
   write(cli, &cmd, sizeof(char));
   write(cli, result.entry, strlen(result.entry) + 1);
+  free(result.entry);
   stats.nb_snd++;
 
   return true;
@@ -540,7 +540,7 @@ static bool cmd_popf(int cli, struct message *request)
 
     stack.dirs = c->next;
     result = *c;
-    free_node(c);
+    free(c);
   }
   pthread_mutex_unlock(&stack.mutex);
 
@@ -548,6 +548,7 @@ static bool cmd_popf(int cli, struct message *request)
      inside the critical section */
   write(cli, &cmd, sizeof(char));
   write(cli, result.entry, strlen(result.entry) + 1);
+  free(result.entry);
   stats.nb_snd++;
 
   return true;
