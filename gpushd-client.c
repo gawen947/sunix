@@ -1,5 +1,5 @@
 /* File: gpushd-client.c
-   Time-stamp: <2012-02-26 01:26:36 gawen>
+   Time-stamp: <2012-02-26 02:12:18 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -136,7 +136,7 @@ static void help(const struct opts_name *names)
   }
 }
 
-static void cmdline(int argc, char * const argv[], const char *cwd)
+static void cmdline(int argc, char * const argv[])
 {
   int exit_status = EXIT_FAILURE;
 
@@ -150,11 +150,11 @@ static void cmdline(int argc, char * const argv[], const char *cwd)
              OPT_HELP   = 'h' };
 
   struct opts_name names[] = {
-    { 'p', "push",    "Push the current directory" },
-    { 'P', "pop",     "Pop a directory from the stack" },
+    { 'p', "push",    "Push a message" },
+    { 'P', "pop",     "Pop a message from the stack" },
     { 'c', "clean",   "Clean the stack" },
-    { 'g', "get",     "Get a directory, without removing it" },
-    { 'G', "get-all", "Get and print all directory from the stack" },
+    { 'g', "get",     "Get a message, without removing it" },
+    { 'G', "get-all", "Get and print all message from the stack" },
     { 's', "size",    "Get the stack size" },
     { 'i', "info",    "Get informations about the server" },
     { 'h', "help",    "Show this help message" },
@@ -184,7 +184,7 @@ static void cmdline(int argc, char * const argv[], const char *cwd)
       if(optarg)
         add_request(CMD_PUSH, optarg, 0);
       else
-        add_request(CMD_PUSH, cwd, 0);
+        errx(EXIT_FAILURE, "Not implemented...");
       break;
     case(OPT_POP):
       if(optarg)
@@ -457,18 +457,13 @@ static void client()
 
 int main(int argc, char * const argv[])
 {
-  char cwd[MAX_PATH];
-
-  /* get current working directory */
-  getcwd(cwd, MAX_PATH);
-
   /* get program name */
   prog_name = (const char *)strrchr(argv[0], '/');
   prog_name = prog_name ? (prog_name + 1) : argv[0];
 
   /* parse command line and build
      the request stack */
-  cmdline(argc, argv, cwd);
+  cmdline(argc, argv);
 
   /* start client */
   client();
