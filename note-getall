@@ -1,0 +1,11 @@
+#!/bin/sh
+PATH=$PATH:.:##PREFIX##/lib/sh
+. gpushd.sh
+
+sock=$(get_sock) || exit 1
+check_sock $sock || exit 1
+
+temp=$(tempfile)
+gpushd-client --get-all $sock > $temp
+less $temp
+rm $temp

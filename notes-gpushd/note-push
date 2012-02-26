@@ -1,0 +1,16 @@
+#!/bin/sh
+PATH=$PATH:.:/usr/local/lib/sh
+. gpushd.sh
+
+sock=$(get_sock) || exit 1
+check_sock $sock || exit 1
+
+temp=$(tempfile)
+vim $temp
+if [ -s $temp ]
+then
+  gpushd-client --push="$(cat $temp)" $sock
+else
+  echo "File not modified. Nothing pushed."
+fi
+rm $temp

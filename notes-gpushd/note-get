@@ -1,0 +1,16 @@
+#!/bin/sh
+PATH=$PATH:.:/usr/local/lib/sh
+. gpushd.sh
+
+sock=$(get_sock) || exit 1
+check_sock $sock || exit 1
+
+temp=$(tempfile)
+if [ -z "$1" ]
+then
+  gpushd-client --get $sock > $temp
+else
+  gpushd-client --get="$1" $sock > $temp
+fi
+less $temp
+rm $temp

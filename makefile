@@ -1,10 +1,15 @@
 CC=gcc
 RM=rm -f
+MKDIR=mkdir -p
+SED=sed
+LN=ln -s
 INSTALL=install
+INSTALL_DATA=$(INSTALL) -m 444
 FREE_CFLAGS=-std=c99 -s -nostdlib -fomit-frame-pointer -O2
 CFLAGS=-std=c99 -fomit-frame-pointer -O2
 PREF=/usr/local/
 BIN=$(PREF)bin/
+LIBSH=$(PREF)lib/sh
 
 TLIBC_SRC := tlibc.h
 SUBARCH   := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
@@ -182,3 +187,24 @@ install: all
 	$(INSTALL) args-length $(BIN)
 	$(INSTALL) gpushd-server $(BIN)
 	$(INSTALL) gpushd-client $(BIN)
+	
+	# scripts
+	$(MKDIR)   $(LIBSH)
+	$(INSTALL_DATA) gpushd.sh $(LIBSH)
+	$(INSTALL) note-pop $(BIN)
+	$(INSTALL) note-get $(BIN)
+	$(INSTALL) note-push $(BIN)
+	$(INSTALL) note-getall $(BIN)
+	$(INSTALL) note-info $(BIN)
+	$(SED) -i 's/##PREFIX##/\/usr\/local/g' \
+  	$(BIN)note-pop                        \
+		$(BIN)note-get                        \
+	  $(BIN)note-push                       \
+		$(BIN)note-getall                     \
+		$(BIN)note-info
+	$(LN) $(BIN)note-pop    $(BIN)todo-pop
+	$(LN) $(BIN)note-get    $(BIN)todo-get
+	$(LN) $(BIN)note-push   $(BIN)todo-push
+	$(LN) $(BIN)note-getall $(BIN)todo-getall
+	$(LN) $(BIN)note-info   $(BIN)todo-info
+

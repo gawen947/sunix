@@ -1,0 +1,8 @@
+#!/bin/sh
+PATH=$PATH:.:/usr/local/lib/gpushd/lib.sh
+. lib.sh
+
+sock=$(get_sock) || exit 1
+check_sock $sock || exit 1
+
+gpushd-client --info $sock
