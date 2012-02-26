@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2012-02-26 01:59:08 gawen>
+   Time-stamp: <2012-02-26 16:58:08 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -453,7 +453,7 @@ static void s_send_error(int cli, int code)
 static bool cmd_push(int cli, struct message *request)
 {
   struct d_node *new = xmalloc(sizeof(struct d_node));
-  new->entry = xmalloc(strlen(request->p_string));
+  new->entry = xmalloc(strlen(request->p_string)+1);
   strcpy(new->entry, request->p_string);
 
   /* stack critical read-write section */
