@@ -7,6 +7,7 @@ check_sock $sock || exit 1
 
 temp=$(tempfile)
 if [ -z "$1" ]
+then
   gpushd-client --pop $sock > $temp
 else
   gpushd-client --pop="$1" $sock > $temp
