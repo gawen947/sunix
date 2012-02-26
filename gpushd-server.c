@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2012-02-26 00:18:42 gawen>
+   Time-stamp: <2012-02-26 01:41:35 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -584,15 +584,15 @@ static bool cmd_get(int cli, struct message *request)
   /* stack critical read section */
   pthread_mutex_lock(&stack.mutex);
   {
-    for(i = 0 ; i < j ; i++, c = c->next) {
-      if(c == NULL) {
-        pthread_mutex_unlock(&stack.mutex); /* release early */
-        if(stack.size)
-          s_send_error(cli, E_NFOUND);
-        else
-          s_send_error(cli, E_EMPTY);
-        return true;
-      }
+    for(i = 0 ; i < j && c != NULL ; i++, c = c->next);
+
+    if(c == NULL) {
+      pthread_mutex_unlock(&stack.mutex); /* release early */
+      if(stack.size)
+        s_send_error(cli, E_NFOUND);
+      else
+        s_send_error(cli, E_EMPTY);
+      return false;
     }
 
     result = *c;

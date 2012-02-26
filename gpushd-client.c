@@ -1,5 +1,5 @@
 /* File: gpushd-client.c
-   Time-stamp: <2011-11-04 16:42:29 gawen>
+   Time-stamp: <2012-02-26 01:26:36 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -28,6 +28,7 @@
    OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
    SUCH DAMAGE. */
 
+#define _BSD_SOURCE   1
 #define _POSIX_SOURCE 1
 
 #include <sys/types.h>
@@ -45,6 +46,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <pthread.h>
+#include <endian.h>
 #include <signal.h>
 #include <err.h>
 
@@ -238,12 +240,14 @@ static void proceed_request(int srv, const struct request *request)
   write(srv, &cmd, sizeof(char));
 
   switch(request->command) {
+    uint32_t ul;
   case(CMD_PUSH):
     write(srv, request->d_path, strlen(request->d_path) + 1);
     break;
   case(CMD_POP):
   case(CMD_GET):
-    write(srv, &request->p_int, sizeof(int));
+    ul = htole32(request->p_int);
+    write(srv, &ul, sizeof(ul));
     break;
   case(CMD_GETALL):
     getall_counter = 0;

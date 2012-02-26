@@ -1,5 +1,5 @@
 /* File: gpushd-common.c
-   Time-stamp: <2011-11-04 16:29:54 gawen>
+   Time-stamp: <2012-02-26 01:42:01 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -28,6 +28,7 @@
    OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
    SUCH DAMAGE. */
 
+#define _BSD_SOURCE   1
 #define _POSIX_SOURCE 1
 
 #include <sys/types.h>
@@ -45,6 +46,7 @@
 #include <assert.h>
 #include <pthread.h>
 #include <signal.h>
+#include <endian.h>
 #include <err.h>
 
 #include "safe-call.h"
@@ -156,7 +158,7 @@ bool parse(int remote, struct parse_state *state,
           i++;
           break;
         }
-        else if(j == MAX_PATH) {
+        else if(j == MAX_ENTRY) {
           send_error(remote, E_LONG);
           return false;
         }
@@ -166,11 +168,9 @@ bool parse(int remote, struct parse_state *state,
       break;
     case(ST_INT):
       for(j = state->p_idx ; i < n ; j++, i++) {
-        /* since we use unix domain sockets we stick
-           to the same architecture and don't bother
-           about endianess */
         state->msg.p_int.bytes[j] = buf[i];
         if(j == sizeof(int) - 1) {
+          state->msg.p_int.value = le32toh(state->msg.p_int.value);
           state->state = ST_CMD;
           if(!proceed(remote, &state->msg))
             return false;
