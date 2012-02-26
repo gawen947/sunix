@@ -378,10 +378,6 @@ static bool cmd_respi(int srv, struct message *response)
 
 static bool cmd_error(int srv, struct message *response)
 {
-  /* do not warn user on empty stack */
-  if(response->p_int.value == E_EMPTY)
-    return true;
-
   warnx("received error from server for command %d : %s",
         current_request, str_error(response->p_int.value));
 

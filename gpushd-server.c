@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2012-02-26 01:53:25 gawen>
+   Time-stamp: <2012-02-26 01:59:08 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -538,6 +538,7 @@ static bool cmd_popf(int cli, struct message *request)
       return true;
     }
 
+    stack.size--;
     stack.dirs = c->next;
     result = *c;
     free(c);
