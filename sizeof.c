@@ -1,5 +1,5 @@
 /* File: sizeof.c
-   Time-stamp: <2012-03-26 18:25:27 gawen>
+   Time-stamp: <2012-03-26 18:46:10 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -49,49 +49,38 @@ static iofile_t out;
 
 static void usage()
 {
-  (void)fprintf(stderr, "usage: [-daHh] files ...\n");
+  (void)fprintf(stderr, "usage: [-aHh] files ...\n");
   exit(1);
 }
 
 static unsigned int human_size(char * buf, ssize_t size)
 {
   const char *unit;
-  unsigned int dec, fract;
+  float fp_size = (float)size;
 
-  if(size < 1000) {
-    unit  = "B";
-    dec   = size;
-    fract = 0;
-  }
+  if(size < 1000)
+    return sprintf(buf, "%d B", size);
   else if(size < 1000000) {
-    unit  = "kB";
-    dec   = size / 1000;
-    fract = (size % 1000) / 10;
+    unit     = "kB";
+    fp_size /= 1E3;
   }
   else if(size < 1000000000L) {
     unit  = "MB";
-    dec   = size / 1000000;
-    fract = (size % 1000000) / 10000;
+    fp_size /= 1E6;
   }
   else if(size < 1000000000000LL) {
     unit  = "GB";
-    dec   = size / 1000000000L;
-    fract = (size % 1000000000L) / 10000000L;
+    fp_size /= 1E9;
   }
   else if(size < 1000000000000000LL) {
     unit  = "TB";
-    dec   = size / 1000000000000LL;
-    fract = (size % 1000000000000LL) / 10000000000LL;
+    fp_size /= 1E12;
   } else {
     unit  = "PB";
-    dec   = size / 1000000000000000LL;
-    fract = (size % 1000000000000000LL) / 10000000000000LL;
+    fp_size /= 1E15;
   }
 
-  if(fract == 0)
-    return sprintf(buf, "%d %s", dec, unit);
-  else
-    return sprintf(buf, "%d.%d %s", dec, fract, unit);
+  return sprintf(buf, "%3.2f %s", fp_size, unit);
 }
 
 static void do_stat(const char *path)
@@ -100,10 +89,12 @@ static void do_stat(const char *path)
   unsigned int len;
   ssize_t filesize;
   char buf[32];
-  char nl = '\n', sp = ' ';
+  char nl = '\n', sp = ' ', sc = ':';
 
-  if(stat(path, &info) < 0)
-    err(1, "cannot stat \"%s\"", path);
+  if(stat(path, &info) < 0) {
+    warn("cannot stat \"%s\"", path);
+    return;
+  }
 
   if(aflag)
     filesize = info.st_size;
@@ -116,6 +107,7 @@ static void do_stat(const char *path)
     len = sprintf(buf, "%ld", filesize);
 
   iobuf_write(out, path, strlen(path));
+  iobuf_write(out, &sc, 1); /* FIXME: use iobuf_putc(out, c) instead */
   iobuf_write(out, &sp, 1);
   iobuf_write(out, buf, len);
   iobuf_write(out, &nl, 1);
@@ -124,7 +116,6 @@ static void do_stat(const char *path)
 int main(int argc, char *argv[])
 {
   struct option opts[] = {
-    { "disk-usage",    no_argument, NULL, 'd' },
     { "apparent-size", no_argument, NULL, 'a' },
     { "human",         no_argument, NULL, 'H' },
     { "help",          no_argument, NULL, 'h' },
@@ -138,9 +129,6 @@ int main(int argc, char *argv[])
       break;
 
     switch(c) {
-    case('d'):
-      aflag = 0;
-      break;
     case('a'):
       aflag = 1;
       break;
