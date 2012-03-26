@@ -1,5 +1,5 @@
 /* File: iobuf.h
-   Time-stamp: <2012-02-25 20:55:03 gawen>
+   Time-stamp: <2012-02-26 20:09:07 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -35,6 +35,9 @@
 
 typedef struct iofile * iofile_t;
 
+/* This creates an opened stream from an already opened file descriptor. */
+iofile_t iobuf_dopen(int fd);
+
 /* This opens the file whose name is the string pointed to by pathname
    and associates a stream with it. The arguments flags and mode are
    subject to the same semantic that the ones used in open. */
@@ -60,5 +63,17 @@ size_t iobuf_flush(iofile_t file);
 /* Close a stream. This function also take care of flushing the buffers
    when needed. */
 int iobuf_close(iofile_t file);
+
+/* The iobuf_lseek() function repositions the offset of the open stream
+   associated with the file argument to the argument offset according
+   to the directive whence. For details see lseek(). */
+off_t iobuf_lseek(iofile_t file, off_t offset, int whence);
+
+#if defined _LARGEFILE64_SOURCE &&!defined __FreeBSD__
+/* The iobuf_lseek64() function repositions the offset of the open stream
+   associated with the file argument to the argument offset according
+   to the directive whence. For details see lseek64() */
+off64_t iobuf_lseek64(iofile_t file, off64_t offset, int whence);
+#endif
 
 #endif /* _IOBUF_H_ */

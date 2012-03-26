@@ -1,5 +1,5 @@
 /* File: iobuf.c
-   Time-stamp: <2012-02-26 00:18:53 gawen>
+   Time-stamp: <2012-03-26 17:35:14 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -28,7 +28,7 @@
    OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
    SUCH DAMAGE. */
 
-#define _POSIX_C_SOURCE 201102L
+#define _POSIX_C_SOURCE 200112L
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -39,7 +39,7 @@
 
 #include "iobuf.h"
 
-#define IOBUF_SIZE 65536
+#define IOBUF_SIZE 1024 * 1024
 
 #ifndef MIN
 # define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -60,7 +60,7 @@ size_t iobuf_flush(iofile_t file)
   size_t partial_write;
 
   partial_write = write(file->fd, file->buf, file->write_size);
-  if(partial_write >= 0) {
+  if(!partial_write) {
     file->write_size -= partial_write;
     file->write_buf  -= partial_write;
   }
@@ -68,25 +68,30 @@ size_t iobuf_flush(iofile_t file)
   return partial_write;
 }
 
-iofile_t iobuf_open(const char *pathname, int flags, mode_t mode)
+iofile_t iobuf_dopen(int fd)
 {
   struct iofile *file = malloc(sizeof(struct iofile));
   if(!file)
     return NULL;
 
+  file->fd         = fd;
   file->write_buf  = file->buf;
   file->read_buf   = file->buf + IOBUF_SIZE;
   file->write_size = file->read_size = 0;
 
-  file->fd = open(pathname, flags, mode);
-  if(file->fd < 0) {
-    free(file);
-    return NULL;
-  }
-
   posix_fadvise(file->fd, 0, 0, POSIX_FADV_SEQUENTIAL);
 
   return file;
+}
+
+iofile_t iobuf_open(const char *pathname, int flags, mode_t mode)
+{
+  int fd = open(pathname, flags, mode);
+
+  if(fd < 0)
+    return NULL;
+
+  return iobuf_dopen(fd);
 }
 
 size_t iobuf_write(iofile_t file, const void *buf, size_t count)
@@ -161,3 +166,39 @@ int iobuf_close(iofile_t file)
 
   return ret;
 }
+
+off_t iobuf_lseek(iofile_t file, off_t offset, int whence)
+{
+  if(whence == SEEK_CUR)
+    offset -= IOBUF_SIZE - file->read_size;
+  off_t res = lseek(file->fd, offset, whence);
+  if(res < 0)
+    return res;
+
+  file->read_size = 0;
+  file->read_buf  = file->buf + 2 * IOBUF_SIZE;
+
+  if(file->write_size)
+    iobuf_flush(file);
+
+  return res;
+}
+
+#if defined _LARGEFILE64_SOURCE &&!defined __FreeBSD__
+off64_t iobuf_lseek64(iofile_t file, off64_t offset, int whence)
+{
+  if(whence == SEEK_CUR)
+    offset -= IOBUF_SIZE - file->read_size;
+  off64_t res = lseek64(file->fd, offset, whence);
+  if(res < 0)
+    return res;
+
+  file->read_size = 0;
+  file->read_buf  = file->buf + 2 * IOBUF_SIZE;
+
+  if(file->write_size)
+    iobuf_flush(file);
+
+  return res;
+}
+#endif /* __FreeBSD__ */
