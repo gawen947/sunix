@@ -123,7 +123,7 @@ int main(int argc, char *argv[])
   };
 
   while(1) {
-    int c = getopt_long(argc, argv, "daHh", opts, NULL);
+    int c = getopt_long(argc, argv, "aHh", opts, NULL);
 
     if(c < 0)
       break;
