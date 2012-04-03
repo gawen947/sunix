@@ -823,3 +823,4 @@ static int mastercmp(const FTSENT ** a, const FTSENT ** b)
     return (1);
   return (0);
 }
+

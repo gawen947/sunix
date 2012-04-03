@@ -1,5 +1,5 @@
 /* File: iobuf.c
-   Time-stamp: <2012-03-26 17:35:14 gawen>
+   Time-stamp: <2012-04-03 21:43:24 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -39,7 +39,7 @@
 
 #include "iobuf.h"
 
-#define IOBUF_SIZE 1024 * 1024
+#define IOBUF_SIZE 65536
 
 #ifndef MIN
 # define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -55,12 +55,12 @@ struct iofile {
   char buf[IOBUF_SIZE * 2];
 };
 
-size_t iobuf_flush(iofile_t file)
+ssize_t iobuf_flush(iofile_t file)
 {
-  size_t partial_write;
+  ssize_t partial_write;
 
   partial_write = write(file->fd, file->buf, file->write_size);
-  if(!partial_write) {
+  if(partial_write >= 0) {
     file->write_size -= partial_write;
     file->write_buf  -= partial_write;
   }
@@ -94,15 +94,15 @@ iofile_t iobuf_open(const char *pathname, int flags, mode_t mode)
   return iobuf_dopen(fd);
 }
 
-size_t iobuf_write(iofile_t file, const void *buf, size_t count)
+ssize_t iobuf_write(iofile_t file, const void *buf, size_t count)
 {
   if(count > IOBUF_SIZE - file->write_size) {
-    size_t partial_write;
+    ssize_t partial_write;
 
     partial_write = iobuf_flush(file);
 
     if(count > IOBUF_SIZE) {
-      size_t full_write;
+      ssize_t full_write;
       full_write = write(file->fd, buf, count);
       if(full_write < 0)
         return full_write;
@@ -117,12 +117,12 @@ size_t iobuf_write(iofile_t file, const void *buf, size_t count)
   return count;
 }
 
-size_t iobuf_read(iofile_t file, void *buf, size_t count)
+ssize_t iobuf_read(iofile_t file, void *buf, size_t count)
 {
-  size_t ret = count;
+  ssize_t ret = count;
 
   do {
-    size_t partial_read;
+    ssize_t partial_read;
 
     if(file->read_size == 0) {
       if(count > IOBUF_SIZE)
@@ -167,6 +167,22 @@ int iobuf_close(iofile_t file)
   return ret;
 }
 
+int iobuf_putc(char c, iofile_t file)
+{
+  if(file->write_size == IOBUF_SIZE) {
+    ssize_t partial_write;
+    partial_write = iobuf_flush(file);
+    if(partial_write < 0)
+      return partial_write;
+  }
+
+  *file->write_buf = c;
+  file->write_size++;
+  file->write_buf++;
+
+  return c;
+}
+
 off_t iobuf_lseek(iofile_t file, off_t offset, int whence)
 {
   if(whence == SEEK_CUR)
@@ -184,7 +200,8 @@ off_t iobuf_lseek(iofile_t file, off_t offset, int whence)
   return res;
 }
 
-#if defined _LARGEFILE64_SOURCE &&!defined __FreeBSD__
+#ifndef __FreeBSD__
+#ifdef _LARGEFILE64_SOURCE
 off64_t iobuf_lseek64(iofile_t file, off64_t offset, int whence)
 {
   if(whence == SEEK_CUR)
@@ -201,4 +218,5 @@ off64_t iobuf_lseek64(iofile_t file, off64_t offset, int whence)
 
   return res;
 }
+#endif /* _LARGEFILE64_SOURCE */
 #endif /* __FreeBSD__ */

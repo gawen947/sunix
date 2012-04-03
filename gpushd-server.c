@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2012-02-26 16:58:08 gawen>
+   Time-stamp: <2012-04-03 21:12:56 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -51,6 +51,7 @@
 #include <assert.h>
 #include <pthread.h>
 #include <signal.h>
+
 #include <fcntl.h>
 #include <getopt.h>
 #include <errno.h>
@@ -61,6 +62,8 @@
 #else
 #include <endian.h>
 #endif /* __FreeBSD__ */
+
+#define USE_THREAD
 
 #include "gpushd-common.h"
 #include "safe-call.h"
@@ -89,8 +92,8 @@ enum s_magic {
 static const char *prog_name;
 static const char *sock_path;
 static const char *swap_path;
-static unsigned int synctime;
-static unsigned int timeout = DEFAULT_TIMEOUT;
+static int synctime;
+static int timeout = DEFAULT_TIMEOUT;
 
 struct opts_name {
   char name_short;
@@ -164,7 +167,7 @@ static size_t xiobuf_write(iofile_t file, const void *buf, size_t count)
 
 static size_t xiobuf_read(iofile_t file, void *buf, size_t count)
 {
-  size_t ret = iobuf_read(file, buf, count);
+  int ret = iobuf_read(file, buf, count);
   if(ret < 0) {
     iobuf_close(file);
     err(EXIT_FAILURE, "iobuf_read");
@@ -802,7 +805,7 @@ static bool cmd_getall(int cli, struct message *request)
 static bool cmd_error(int cli, struct message *request)
 {
   warnx("received error from client %d with %s",
-        str_error(request->p_int.value));
+        cli, str_error(request->p_int.value));
 
   return true;
 }
@@ -1015,8 +1018,8 @@ static void server(const char *sock_path)
     /* setup client thread */
     pthread_mutex_lock(&pool.st_mutex);
     SET_BIT(i, pool.st_threads);
-    pthread_mutex_unlock(&pool.st_mutex);
     pool.fd_cli[i] = fd;
+    pthread_mutex_unlock(&pool.st_mutex);
 
     if(pthread_create(&pool.threads[i], NULL, new_cli, (void *)(long)i))
       err(EXIT_FAILURE, "cannot create thread");
@@ -1064,7 +1067,7 @@ static void help(const struct opts_name *names)
   int max = 0;
 
   /* basic usage */
-  fprintf(stderr, "Usage: %s [OPTIONS] [SOCKET-PATH]\n", prog_name);
+  fprintf(stderr, "Usage: %s [OPTIONS] [SOCKET-PATH] [SWAP-PATH]\n", prog_name);
 
   /* maximum option name size for padding */
   for(opt = names ; opt->name_long ; opt++) {

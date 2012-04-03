@@ -88,7 +88,7 @@ cp: cp.c bsd.c record-invalid.c
 mv: mv.c bsd.c htable.c record-invalid.c
 	$(CC) $(CFLAGS) $^ -DNO_SETMODE -o $@
 
-ls: ls.c bsd.c htable.c record-invalid.c
+ls: ls.c bsd.c htable.c record-invalid.c iobuf.c iobuf_stdout.c
 	$(CC) $(CFLAGS) $^ -DCOLORLS -DNO_SETMODE -ltinfo -o $@
 
 cat: cat.c bsd.c record-invalid.c
@@ -120,7 +120,7 @@ rmdir: rmdir.c record-invalid.c
 	$(CC) $(CFLAGS) $^ -o $@
 
 gpushd-server: safe-call.c safe-call.h gpushd.h gpushd-server.c gpushd-common.c gpushd-common.h iobuf.c iobuf.h
-	$(CC) $(CFLAGS) -pthread -lrt -DUSE_THREAD=1 -DNDEBUG=1 $^ -o $@
+	$(CC) $(CFLAGS) -pthread -lrt -DNDEBUG=1 $^ -o $@
 
 gpushd-client: safe-call.c safe-call.h gpushd.h gpushd-client.c gpushd-common.c gpushd-common.h
 	$(CC) $(CFLAGS) $^ -o $@

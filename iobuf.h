@@ -1,5 +1,5 @@
 /* File: iobuf.h
-   Time-stamp: <2012-02-26 20:09:07 gawen>
+   Time-stamp: <2012-04-03 21:45:20 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -31,6 +31,8 @@
 #ifndef _IOBUF_H_
 #define _IOBUF_H_
 
+#include <sys/types.h>
+#include <unistd.h>
 #include <fcntl.h>
 
 typedef struct iofile * iofile_t;
@@ -46,34 +48,39 @@ iofile_t iobuf_open(const char *pathname, int flags, mode_t mode);
 /* Write up to count bytes from the buffer pointer buf to the stream
    referred to by file. This is done through an user-space buffer in
    order to avoid useless syscall switch to kernel mode. */
-size_t iobuf_write(iofile_t file, const void *buf, size_t count);
+ssize_t iobuf_write(iofile_t file, const void *buf, size_t count);
 
 /* Attemps to read up to count bytes from the stream referred to by
    file. This is done through an user-space buffer in order to avoid
    useless syscall switch to kernel mode. */
-size_t iobuf_read(iofile_t file, void *buf, size_t count);
+ssize_t iobuf_read(iofile_t file, void *buf, size_t count);
 
 /* For output streams, iobuf_flush forces a write of all user-space
    buffered data for the given output. As the standard fflush function
    the kernel buffers are not flushed so you may need to sync manually.
    Unlike the standard fflush function this function does not discards
    the read buffer and only affects the write buffer. */
-size_t iobuf_flush(iofile_t file);
+ssize_t iobuf_flush(iofile_t file);
 
 /* Close a stream. This function also take care of flushing the buffers
    when needed. */
 int iobuf_close(iofile_t file);
+
+/* Write a single character to the specified file. */
+int iobuf_putc(char c, iofile_t file);
 
 /* The iobuf_lseek() function repositions the offset of the open stream
    associated with the file argument to the argument offset according
    to the directive whence. For details see lseek(). */
 off_t iobuf_lseek(iofile_t file, off_t offset, int whence);
 
-#if defined _LARGEFILE64_SOURCE &&!defined __FreeBSD__
+#ifndef __FreeBSD__
+#ifdef _LARGEFILE64_SOURCE
 /* The iobuf_lseek64() function repositions the offset of the open stream
    associated with the file argument to the argument offset according
    to the directive whence. For details see lseek64() */
 off64_t iobuf_lseek64(iofile_t file, off64_t offset, int whence);
-#endif
+#endif /* _LARGEFILE64_SOURCE */
+#endif /* __FreeBSD__ */
 
 #endif /* _IOBUF_H_ */

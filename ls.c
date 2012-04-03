@@ -64,6 +64,7 @@
 #endif
 
 #include "bsd.h"
+#include "iobuf_stdout.h"
 #include "record-invalid.h"
 
 #define NO_PRINT  1
@@ -202,18 +203,18 @@ static int prn_normal(const char *s)
   n = 0;
   while ((clen = mbrtowc(&wc, s, MB_LEN_MAX, &mbs)) != 0) {
     if (clen == (size_t)-2) {
-      n += printf("%s", s);
+      n += iobuf_printf("%s", s);
       break;
     }
     if (clen == (size_t)-1) {
       memset(&mbs, 0, sizeof(mbs));
-      putchar((unsigned char)*s);
+      iobuf_putchar((unsigned char)*s);
       s++;
       n++;
       continue;
     }
     for (i = 0; i < (int)clen; i++)
-      putchar((unsigned char)s[i]);
+      iobuf_putchar((unsigned char)s[i]);
     s += clen;
     if (iswprint(wc))
       n += wcwidth(wc);
@@ -232,25 +233,25 @@ static int prn_printable(const char *s)
   n = 0;
   while ((clen = mbrtowc(&wc, s, MB_LEN_MAX, &mbs)) != 0) {
     if (clen == (size_t)-1) {
-      putchar('?');
+      iobuf_putchar('?');
       s++;
       n++;
       memset(&mbs, 0, sizeof(mbs));
       continue;
     }
     if (clen == (size_t)-2) {
-      putchar('?');
+      iobuf_putchar('?');
       n++;
       break;
     }
     if (!iswprint(wc)) {
-      putchar('?');
+      iobuf_putchar('?');
       s += clen;
       n++;
       continue;
     }
     for (i = 0; i < (int)clen; i++)
-      putchar((unsigned char)s[i]);
+      iobuf_putchar((unsigned char)s[i]);
     s += clen;
     n += wcwidth(wc);
   }
@@ -315,13 +316,13 @@ static int prn_octal(const char *s)
     goodchar = clen != (size_t)-1 && clen != (size_t)-2;
     if (goodchar && iswprint(wc) && wc != L'\"' && wc != L'\\') {
       for (i = 0; i < (int)clen; i++)
-        putchar((unsigned char)s[i]);
+        iobuf_putchar((unsigned char)s[i]);
       len += wcwidth(wc);
     } else if (goodchar && f_octal_escape && wc >= 0 &&
                wc <= (wchar_t)UCHAR_MAX &&
                (p = strchr(esc, (char)wc)) != NULL) {
-      putchar('\\');
-      putchar(p[1]);
+      iobuf_putchar('\\');
+      iobuf_putchar(p[1]);
       len += 2;
     } else {
       if (goodchar)
@@ -332,10 +333,10 @@ static int prn_octal(const char *s)
         prtlen = strlen(s);
       for (i = 0; i < prtlen; i++) {
         ch = (unsigned char)s[i];
-        putchar('\\');
-        putchar('0' + (ch >> 6));
-        putchar('0' + ((ch >> 3) & 7));
-        putchar('0' + (ch & 7));
+        iobuf_putchar('\\');
+        iobuf_putchar('0' + (ch >> 6));
+        iobuf_putchar('0' + ((ch >> 3) & 7));
+        iobuf_putchar('0' + (ch & 7));
         len += 4;
       }
     }
@@ -499,7 +500,7 @@ static void printscol(const DISPLAY *dp)
     if (IS_NOPRINT(p))
       continue;
     (void)printaname(p, dp->s_inode, dp->s_block);
-    (void)putchar('\n');
+    (void)iobuf_putchar('\n');
   }
 }
 
@@ -536,7 +537,7 @@ static void printlong(const DISPLAY *dp)
 
   if ((dp->list == NULL || dp->list->fts_level != FTS_ROOTLEVEL) &&
       (f_longform || f_size)) {
-    (void)printf("total %lu\n", howmany(dp->btotal, blocksize));
+    (void)iobuf_printf("total %lu\n", howmany(dp->btotal, blocksize));
   }
 
   for (p = dp->list; p; p = p->fts_link) {
@@ -544,13 +545,13 @@ static void printlong(const DISPLAY *dp)
       continue;
     sp = p->fts_statp;
     if (f_inode)
-      (void)printf("%*lu ", dp->s_inode, (u_long)sp->st_ino);
+      (void)iobuf_printf("%*lu ", dp->s_inode, (u_long)sp->st_ino);
     if (f_size)
-      (void)printf("%*ld ",
+      (void)iobuf_printf("%*ld ",
                    dp->s_block, howmany(sp->st_blocks, blocksize));
     strmode(sp->st_mode, buf);
     np = p->fts_pointer;
-    (void)printf("%s %*u %-*s  %-*s  ", buf, dp->s_nlink,
+    (void)iobuf_printf("%s %*u %-*s  %-*s  ", buf, dp->s_nlink,
                  sp->st_nlink, dp->s_user, np->user, dp->s_group,
                  np->group);
     if (S_ISCHR(sp->st_mode) || S_ISBLK(sp->st_mode))
@@ -576,7 +577,7 @@ static void printlong(const DISPLAY *dp)
       (void)printtype(sp->st_mode);
     if (S_ISLNK(sp->st_mode))
       printlink(p);
-    (void)putchar('\n');
+    (void)iobuf_putchar('\n');
   }
 }
 
@@ -591,17 +592,17 @@ static void printstream(const DISPLAY *dp)
     /* XXX strlen does not take octal escapes into account. */
     if (strlen(p->fts_name) + chcnt +
         (p->fts_link ? 2 : 0) >= (unsigned)termwidth) {
-      putchar('\n');
+      iobuf_putchar('\n');
       chcnt = 0;
     }
     chcnt += printaname(p, dp->s_inode, dp->s_block);
     if (p->fts_link) {
-      printf(", ");
+      iobuf_printf(", ");
       chcnt += 2;
     }
   }
   if (chcnt)
-    putchar('\n');
+    iobuf_putchar('\n');
 }
 
 static void printcol(const DISPLAY *dp)
@@ -665,7 +666,7 @@ static void printcol(const DISPLAY *dp)
 
   if ((dp->list == NULL || dp->list->fts_level != FTS_ROOTLEVEL) &&
       (f_longform || f_size)) {
-    (void)printf("total %lu\n", howmany(dp->btotal, blocksize));
+    (void)iobuf_printf("total %lu\n", howmany(dp->btotal, blocksize));
   }
 
   base = 0;
@@ -686,12 +687,12 @@ static void printcol(const DISPLAY *dp)
              <= endcol) {
         if (f_sortacross && col + 1 >= numcols)
           break;
-        (void)putchar(f_notabs ? ' ' : '\t');
+        (void)iobuf_putchar(f_notabs ? ' ' : '\t');
         chcnt = cnt;
       }
       endcol += colwidth;
     }
-    (void)putchar('\n');
+    (void)iobuf_putchar('\n');
   }
 }
 
@@ -710,9 +711,9 @@ static int printaname(const FTSENT *p, u_long inodefield, u_long sizefield)
   sp = p->fts_statp;
   chcnt = 0;
   if (f_inode)
-    chcnt += printf("%*lu ", (int)inodefield, (u_long)sp->st_ino);
+    chcnt += iobuf_printf("%*lu ", (int)inodefield, (u_long)sp->st_ino);
   if (f_size)
-    chcnt += printf("%*ld ",
+    chcnt += iobuf_printf("%*ld ",
                     (int)sizefield, howmany(sp->st_blocks, blocksize));
 #ifdef COLORLS
   if (f_color)
@@ -734,7 +735,7 @@ static int printaname(const FTSENT *p, u_long inodefield, u_long sizefield)
 static void printdev(size_t width, dev_t dev)
 {
 
-  (void)printf("%#*jx ", (u_int)width, (uintmax_t)dev);
+  (void)iobuf_printf("%#*jx ", (u_int)width, (uintmax_t)dev);
 }
 
 static void printtime(time_t ftime)
@@ -762,8 +763,8 @@ static void printtime(time_t ftime)
     /* mmm dd  yyyy || dd mmm  yyyy */
     format = d_first ? "%e %b  %Y" : "%b %e  %Y";
   strftime(longstring, sizeof(longstring), format, localtime(&ftime));
-  fputs(longstring, stdout);
-  fputc(' ', stdout);
+  iobuf_write(iobuf_stdout, longstring, strlen(longstring));
+  iobuf_putchar(' ');
 }
 
 static int printtype(u_int mode)
@@ -771,7 +772,7 @@ static int printtype(u_int mode)
 
   if (f_slash) {
     if ((mode & S_IFMT) == S_IFDIR) {
-      (void)putchar('/');
+      (void)iobuf_putchar('/');
       return (1);
     }
     return (0);
@@ -779,22 +780,22 @@ static int printtype(u_int mode)
 
   switch (mode & S_IFMT) {
   case S_IFDIR:
-    (void)putchar('/');
+    (void)iobuf_putchar('/');
     return (1);
   case S_IFIFO:
-    (void)putchar('|');
+    (void)iobuf_putchar('|');
     return (1);
   case S_IFLNK:
-    (void)putchar('@');
+    (void)iobuf_putchar('@');
     return (1);
   case S_IFSOCK:
-    (void)putchar('=');
+    (void)iobuf_putchar('=');
     return (1);
   default:
     break;
   }
   if (mode & (S_IXUSR | S_IXGRP | S_IXOTH)) {
-    (void)putchar('*');
+    (void)iobuf_putchar('*');
     return (1);
   }
   return (0);
@@ -803,7 +804,7 @@ static int printtype(u_int mode)
 #ifdef COLORLS
 static int putch(int c)
 {
-  (void)putchar(c);
+  (void)iobuf_putchar(c);
   return 0;
 }
 
@@ -948,7 +949,7 @@ static void printlink(const FTSENT *p)
     return;
   }
   path[lnklen] = '\0';
-  (void)printf(" -> ");
+  (void)iobuf_printf(" -> ");
   (void)printname(path);
 }
 
@@ -958,7 +959,7 @@ static void humanize_number(char *buf, size_t len, int64_t number)
   char unit = '\0';
 
   if(number <= 1024) {
-    snprintf(buf, len, "%d   B", number);
+    snprintf(buf, len, "%ld   B", number);
     return;
   }
   else if(number <= 1000000L) {
@@ -1000,9 +1001,9 @@ static void printsize(size_t width, off_t bytes)
     char buf[HUMANVALSTR_LEN - 1 + 1];
 
     humanize_number(buf, sizeof(buf), (int64_t)bytes);
-    (void)printf("%*s ", (u_int)width, buf);
+    (void)iobuf_printf("%*s ", (u_int)width, buf);
   } else
-    (void)printf("%*ld ", (u_int)width, bytes);
+    (void)iobuf_printf("%*ld ", (u_int)width, bytes);
 }
 
 static void usage(void)
@@ -1082,6 +1083,8 @@ int main(int argc, char *argv[])
   };
 
   (void)setlocale(LC_ALL, "");
+
+  iobuf_stdout_init();
 
   /* Terminal defaults to -Cq, non-terminal defaults to -1. */
   if (isatty(STDOUT_FILENO)) {
@@ -1406,6 +1409,9 @@ int main(int argc, char *argv[])
     traverse(argc, argv, fts_options);
   else
     traverse(1, dotav, fts_options);
+
+  iobuf_stdout_destroy();
+
   exit(rval);
 }
 
@@ -1465,12 +1471,12 @@ static void traverse(int argc, char *argv[], int options)
        * directory with its name.
        */
       if (output) {
-        putchar('\n');
+        iobuf_putchar('\n');
         (void)printname(p->fts_path);
-        puts(":");
+        iobuf_putchar(':');
       } else if (argc > 1) {
         (void)printname(p->fts_path);
-        puts(":");
+        iobuf_putchar(':');
         output = 1;
       }
       chp = fts_children(ftsp, ch_options);
