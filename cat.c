@@ -44,7 +44,6 @@
 #include <ctype.h>
 #include <err.h>
 #include <fcntl.h>
-#include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -81,8 +80,6 @@ static int udom_open(const char *path, int flags);
 int main(int argc, char *argv[])
 {
   int ch;
-
-  setlocale(LC_CTYPE, "");
 
   while ((ch = getopt_long(argc, argv, "benstuv", NULL, NULL)) != -1)
     switch (ch) {

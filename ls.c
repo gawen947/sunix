@@ -395,13 +395,13 @@ static struct {
 static int namecmp(const FTSENT *a, const FTSENT *b)
 {
 
-  return (strcoll(a->fts_name, b->fts_name));
+  return (strcmp(a->fts_name, b->fts_name));
 }
 
 static int revnamecmp(const FTSENT *a, const FTSENT *b)
 {
 
-  return (strcoll(b->fts_name, a->fts_name));
+  return (strcmp(b->fts_name, a->fts_name));
 }
 
 static int modcmp(const FTSENT *a, const FTSENT *b)
@@ -419,7 +419,7 @@ static int modcmp(const FTSENT *a, const FTSENT *b)
   if (b->fts_statp->st_mtim.tv_nsec <
       a->fts_statp->st_mtim.tv_nsec)
     return (-1);
-  return (strcoll(a->fts_name, b->fts_name));
+  return (strcmp(a->fts_name, b->fts_name));
 }
 
 static int revmodcmp(const FTSENT *a, const FTSENT *b)
@@ -443,7 +443,7 @@ static int acccmp(const FTSENT *a, const FTSENT *b)
   if (b->fts_statp->st_atim.tv_nsec <
       a->fts_statp->st_atim.tv_nsec)
     return (-1);
-  return (strcoll(a->fts_name, b->fts_name));
+  return (strcmp(a->fts_name, b->fts_name));
 }
 
 static int revacccmp(const FTSENT *a, const FTSENT *b)
@@ -467,7 +467,7 @@ static int statcmp(const FTSENT *a, const FTSENT *b)
   if (b->fts_statp->st_ctim.tv_nsec <
       a->fts_statp->st_ctim.tv_nsec)
     return (-1);
-  return (strcoll(a->fts_name, b->fts_name));
+  return (strcmp(a->fts_name, b->fts_name));
 }
 
 static int revstatcmp(const FTSENT *a, const FTSENT *b)
@@ -483,7 +483,7 @@ static int sizecmp(const FTSENT *a, const FTSENT *b)
     return (1);
   if (b->fts_statp->st_size < a->fts_statp->st_size)
     return (-1);
-  return (strcoll(a->fts_name, b->fts_name));
+  return (strcmp(a->fts_name, b->fts_name));
 }
 
 static int revsizecmp(const FTSENT *a, const FTSENT *b)

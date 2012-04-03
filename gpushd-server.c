@@ -63,8 +63,6 @@
 #include <endian.h>
 #endif /* __FreeBSD__ */
 
-#define USE_THREAD
-
 #include "gpushd-common.h"
 #include "safe-call.h"
 #include "iobuf.h"

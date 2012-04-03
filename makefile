@@ -5,7 +5,7 @@ SED=sed
 LN=ln -s
 INSTALL=install
 INSTALL_DATA=$(INSTALL) -m 444
-FREE_CFLAGS=-std=c99 -s -nostdlib -fomit-frame-pointer -O2
+FREE_CFLAGS=-std=c99 -fomit-frame-pointer -s -nostdlib -O2
 CFLAGS=-std=c99 -fomit-frame-pointer -O2
 PREF=/usr/local/
 BIN=$(PREF)bin/
@@ -120,7 +120,7 @@ rmdir: rmdir.c record-invalid.c
 	$(CC) $(CFLAGS) $^ -o $@
 
 gpushd-server: safe-call.c safe-call.h gpushd.h gpushd-server.c gpushd-common.c gpushd-common.h iobuf.c iobuf.h
-	$(CC) $(CFLAGS) -pthread -lrt -DNDEBUG=1 $^ -o $@
+	$(CC) $(CFLAGS) -pthread -lrt -DUSE_THREAD -DNDEBUG=1 $^ -o $@
 
 gpushd-client: safe-call.c safe-call.h gpushd.h gpushd-client.c gpushd-common.c gpushd-common.h
 	$(CC) $(CFLAGS) $^ -o $@
