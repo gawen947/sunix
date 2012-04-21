@@ -1,5 +1,5 @@
 /* File: echo.c
-   Time-stamp: <2011-06-11 19:53:52 gawen>
+   Time-stamp: <2012-04-21 16:13:24 gawen>
 
    Copyright (C) 2011 David Hauweele <david@hauweele.net>
 
@@ -166,16 +166,29 @@ int main(int argc, char **argv)
   bool opt_nnl = false;
 
   /* argument parsing */
-  for(i = 1 ; i < argc && *argv[i] == '-'; i++) {
-    if(!strcmp(argv[i], "-e"))
-      opt_bs  = true;
-    else if(!strcmp(argv[i], "-n"))
-      opt_nnl = true;
-    else if(!strcmp(argv[i], "-E"))
-      opt_bs  = false;
-    else
-      break;
+  for(i = 1 ; i < argc && *argv[i] == '-' ; i++) {
+    int j;
+    for(j = 1 ; j != 0 ; j++) {
+      switch(*(argv[1] + j)) {
+      case('e'):
+        opt_bs = true;
+        break;
+      case('n'):
+        opt_nnl = true;
+        break;
+      case('E'):
+        opt_bs = false;
+        break;
+      case('\0'):
+        j = -1;
+        break;
+      default:
+        goto END_ARGS;
+      }
+    }
   }
+
+END_ARGS:
 
   if(opt_bs) {
     for(; i < argc - 1 ; i++) {

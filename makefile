@@ -163,7 +163,6 @@ core-install: all
 	$(INSTALL) cp /bin
 	$(INSTALL) mv /bin
 	$(INSTALL) ls /bin
-	$(INSTALL) cat /bin
 	$(INSTALL) mkdir /bin
 	$(INSTALL) test /usr/bin
 	$(INSTALL) pwd /bin
