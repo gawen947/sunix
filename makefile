@@ -33,7 +33,7 @@ endif
 all: true false quickexec autorestart uptime-ng cat echo basename sleep unlink \
 		 yes link args-length gpushd-server gpushd-client xte-bench readahead ln   \
 		 rm cp mv ls cat mkdir test pwd kill par chmod seq clear chown rmdir base  \
-		 sizeof
+		 sizeof crc32
 	strip $^
 
 true: true.c common.h
@@ -140,13 +140,16 @@ base: base.c safe-call.c
 sizeof: sizeof.c iobuf.c
 	$(CC) $(CFLAGS) $^ -o $@
 
+crc32: crc32-file.c crc32.c
+	$(CC) $(CFLAGS) $^ -o $@
+
 .PHONY : clean install
 
 clean:
 	$(RM) true false quickexec autorestart uptime-ng cat echo basename sleep \
 				unlink yes args-length gpushd-server gpushd-client link xte-bench  \
 				readahead ln rm cp mv ls cat mkdir test pwd kill par chmod seq     \
-			  clear chown rmdir base sizeof
+			  clear chown rmdir base sizeof crc32
 
 core-install: all
 	@echo "Installing core files, hope you've backed up coreutils"
@@ -183,6 +186,7 @@ install: all
 	$(INSTALL) sizeof $(BIN)
 	$(INSTALL) base $(BIN)
 	$(INSTALL) par $(BIN)
+	$(INSTALL) crc32 $(BIN)
 	$(INSTALL) readahead $(BIN)
 	$(INSTALL) xte-bench $(BIN)
 	$(INSTALL) quickexec $(BIN)
