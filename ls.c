@@ -1474,9 +1474,11 @@ static void traverse(int argc, char *argv[], int options)
         iobuf_putchar('\n');
         (void)printname(p->fts_path);
         iobuf_putchar(':');
+        iobuf_putchar('\n');
       } else if (argc > 1) {
         (void)printname(p->fts_path);
         iobuf_putchar(':');
+        iobuf_putchar('\n');
         output = 1;
       }
       chp = fts_children(ftsp, ch_options);
