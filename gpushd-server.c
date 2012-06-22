@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2012-04-03 21:12:56 gawen>
+   Time-stamp: <2012-06-22 09:44:11 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -72,11 +72,6 @@ enum s_magic {
   GPUSHD_SWAP_MAGIK1  = 0x48535047, /* GPSH */
   GPUSHD_SWAP_MAGIK2  = 0x50415753, /* SWAP */
   GPUSHD_SWAP_VERSION = 0x00000002 };
-
-/*
- * TODO:
- *  - avoid duplicates
- */
 
 #define DEFAULT_TIMEOUT 1
 #define MAX_CONCURRENCY 16
@@ -1166,12 +1161,8 @@ int main(int argc, char *argv[])
   sigfillset(&act.sa_mask);
   sigaction(SIGTERM, &act, NULL);
   sigaction(SIGINT, &act, NULL);
-  sigaction(SIGSTOP, &act, NULL);
-  sigaction(SIGKILL, &act, NULL);
-  sigaction(SIGTERM, &act, NULL);
-  sigaction(SIGSTOP, &act, NULL);
-  sigaction(SIGINT, &act, NULL);
   sigaction(SIGALRM, &tim, NULL);
+  sigaction(SIGUSR1, &tim, NULL);
 
   stats.min_nsec = UINT32_MAX;
 
