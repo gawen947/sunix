@@ -22,3 +22,4 @@
 ./debian-install-core-file.sh /usr/bin clear
 ./debian-install-core-file.sh /bin chown
 ./debian-install-core-file.sh /bin rmdir
+./debian-install-core-file.sh /bin sync
