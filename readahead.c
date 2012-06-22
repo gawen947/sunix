@@ -1,5 +1,5 @@
-/* File: readahead.c
-   Time-stamp: <2011-12-23 05:16:04 gawen>
+1/* File: readahead.c
+   Time-stamp: <2012-06-22 13:10:09 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -134,7 +134,7 @@ int main(int argc, const char *argv[])
   if(argc > 1) {
     argv++;
 
-    for(; *argv ; argv++) 
+    for(; *argv ; argv++)
       if(ftw(*argv, read_path, max_open) < 0)
         warn("cannot walk into \"%s\"", *argv);
   }
@@ -150,7 +150,8 @@ int main(int argc, const char *argv[])
     }
   }
 
-  /* wait for remaining children */
+  /* Wait for the remaining children. We have to remove the SIGCHLD signal. */
+  signal(SIGCHLD, SIG_IGN);
   while(child--)
     wait(NULL);
 
