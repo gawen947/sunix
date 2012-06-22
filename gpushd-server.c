@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2012-06-22 09:44:11 gawen>
+   Time-stamp: <2012-06-22 19:48:25 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -71,7 +71,8 @@
 enum s_magic {
   GPUSHD_SWAP_MAGIK1  = 0x48535047, /* GPSH */
   GPUSHD_SWAP_MAGIK2  = 0x50415753, /* SWAP */
-  GPUSHD_SWAP_VERSION = 0x00000002 };
+  GPUSHD_SWAP_VERSION = 0x00000002
+};
 
 #define DEFAULT_TIMEOUT 1
 #define MAX_CONCURRENCY 16
@@ -848,7 +849,7 @@ static bool proceed_request(int cli, struct message *request)
     result = cmd_size(cli, request);
     break;
   case(CMD_NBCLI):
-    result = cmd_nbrcv(cli, request);
+    result = cmd_nbcli(cli, request);
     break;
   case(CMD_NBSRV):
     result = cmd_nbsrv(cli, request);
