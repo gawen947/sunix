@@ -33,7 +33,7 @@ endif
 all: true false quickexec autorestart uptime-ng cat echo basename sleep unlink \
 		 yes link args-length gpushd-server gpushd-client xte-bench readahead ln   \
 		 rm cp mv ls cat mkdir test pwd kill par chmod seq clear chown rmdir base  \
-		 sizeof crc32
+		 sizeof crc32 sys_sync
 	strip $^
 
 true: true.c common.h
@@ -50,6 +50,9 @@ quickexec: quickexec.c
 
 uptime-ng: uptime-ng.c
 	$(CC) $(CFLAGS) $^ -o $@
+
+sys_sync: sys_sync.c $(TLIBC_SRC)
+	$(CC) $(FREE_CFLAGS) $^ -o $@
 
 echo: echo.c $(TLIBC_SRC)
 	$(CC) $(FREE_CFLAGS) $^ -o $@
@@ -149,7 +152,7 @@ clean:
 	$(RM) true false quickexec autorestart uptime-ng cat echo basename sleep \
 				unlink yes args-length gpushd-server gpushd-client link xte-bench  \
 				readahead ln rm cp mv ls cat mkdir test pwd kill par chmod seq     \
-			  clear chown rmdir base sizeof crc32
+			  clear chown rmdir base sizeof crc32 sys_sync
 
 core-install: all
 	@echo "Installing core files, hope you've backed up coreutils"
@@ -186,6 +189,7 @@ install: all
 	$(INSTALL) sizeof $(BIN)
 	$(INSTALL) base $(BIN)
 	$(INSTALL) par $(BIN)
+	$(INSTALL) sys_sync $(BIN)
 	$(INSTALL) crc32 $(BIN)
 	$(INSTALL) readahead $(BIN)
 	$(INSTALL) xte-bench $(BIN)

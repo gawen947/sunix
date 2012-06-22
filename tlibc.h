@@ -50,6 +50,7 @@ long syscall(long syscall_number, ...);
 #define unlink(path) syscall(__NR_unlink, path)
 #define link(old, new) syscall(__NR_link, old, new)
 #define fork() syscall(__NR_fork)
+#define sync() syscall(__NR_sync)
 
 #define print(s) write(STDOUT_FILENO, s "\n", sizeof(s))
 #define warning(s) write(STDERR_FILENO, "warning: " s "\n", sizeof("warning: " s "\n"))
