@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2012-06-22 19:48:25 gawen>
+   Time-stamp: <2012-07-01 22:42:05 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -77,7 +77,6 @@ enum s_magic {
 #define DEFAULT_TIMEOUT 1
 #define MAX_CONCURRENCY 16
 #define MAX_STACK       UINT16_MAX
-#define MAX_ENTRY       UINT16_MAX
 
 #define CHECK_BIT(bit, flag) ((flag) & (1 << (bit)))
 #define SET_BIT(bit, flag) ((flag) |= (1 << (bit)))

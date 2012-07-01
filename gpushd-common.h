@@ -1,5 +1,5 @@
 /* File: gpushd-common.h
-   Time-stamp: <2011-10-30 14:25:30 gawen>
+   Time-stamp: <2012-07-01 22:16:50 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -56,7 +56,7 @@ struct parse_state {
 
   struct message {
     enum cmd command;
-    char p_string[MAX_PATH];
+    char p_string[MAX_ENTRY];
     union {
       int     value;
       uint8_t bytes[sizeof(int)];
