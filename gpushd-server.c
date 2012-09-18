@@ -1,5 +1,5 @@
 /* File: gpushd-server.c
-   Time-stamp: <2012-07-01 22:42:05 gawen>
+   Time-stamp: <2012-07-02 14:08:39 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -1089,6 +1089,7 @@ int main(int argc, char *argv[])
   int exit_status = EXIT_FAILURE;
   int n = MAX_CONCURRENCY;
   struct itimerval timer;
+  struct sigaction ign = { .sa_handler = SIG_IGN };
   struct sigaction tim = { .sa_handler = signal_timer };
   struct sigaction act = { .sa_handler = signal_clean,
                            .sa_flags   = 0 };
