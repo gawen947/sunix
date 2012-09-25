@@ -1,5 +1,5 @@
 /* File: asciify.c
-   Time-stamp: <2012-09-18 22:51:55 gawen>
+   Time-stamp: <2012-09-25 17:29:11 gawen>
 
    Copyright (C) 2012 David Hauweele <david@hauweele.net>
 
@@ -43,7 +43,7 @@ const char * asciify_wchar(wchar_t wchar)
   }
 
   /* We use a simple switch here though we could achieve a better result using a
-     translation table. */ 
+     translation table. */
   switch(wchar) {
   case L'⍽':
     return "_";
@@ -121,13 +121,9 @@ const char * asciify_wchar(wchar_t wchar)
   }
 }
 
-void proceed(const char *path)
+void proceed(int fd)
 {
   int offset;
-  int fd = open(path, O_RDONLY, 0);
-
-  if(fd < 0)
-    errx(1, "cannot open %s", path);
 
   while(1) {
     int bsize;
@@ -176,8 +172,6 @@ void proceed(const char *path)
   /* Check for the final multibyte parsing state */
   if(mbtowc(NULL, NULL, 0))
     errx(1, "cannot decode multibyte string");
-
-  close(fd);
 }
 
 void exit_cb(void)
@@ -190,19 +184,25 @@ int main(int argc, char *argv[])
 {
   argv++;
 
-  if(!*argv) {
-    printf("usage: asciify files\n");
-    exit(0);
-  }
-
   /* Configure locales according to environments variables and
    * initialisation of the stdout context. */
   setlocale(LC_ALL, "");
   iobuf_stdout_init();
   atexit(exit_cb);
 
-  for(; *argv ; argv++)
-    proceed(*argv);
+  if(!*argv)
+    proceed(STDIN_FILENO);
+
+  for(; *argv ; argv++) {
+    int fd = open(*argv, O_RDONLY, 0);
+
+    if(fd < 0)
+      errx(1, "cannot open %s", *argv);
+
+    proceed(fd);
+
+    close(fd);
+  }
 
   return 0;
 }
