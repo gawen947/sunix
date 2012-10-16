@@ -57,6 +57,7 @@
 
 #include "bsd.h"
 #include "record-invalid.h"
+#include "common-cmdline.h"
 
 #define _PATH_CP "/bin/cp"
 #define _PATH_RM "/bin/rm"
@@ -73,6 +74,8 @@ static void usage(void);
 
 int main(int argc, char *argv[])
 {
+  common_main(argc, argv, "mv", "/bin/mv.real", usage, NULL);
+
   size_t baselen, len;
   int rval;
   char *p, *endp;

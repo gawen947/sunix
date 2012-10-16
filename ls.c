@@ -66,6 +66,7 @@
 #include "bsd.h"
 #include "iobuf_stdout.h"
 #include "record-invalid.h"
+#include "common-cmdline.h"
 
 #define NO_PRINT  1
 
@@ -1081,6 +1082,8 @@ int main(int argc, char *argv[])
     { "hide", required_argument, NULL, HIDE_OPTION },
     { NULL, 0, NULL, 0 }
   };
+
+  common_main(argc, argv, "ls", "/bin/ls.real", usage, opts);
 
   (void)setlocale(LC_ALL, "");
 

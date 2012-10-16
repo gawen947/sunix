@@ -50,6 +50,7 @@
 
 #include "bsd.h"
 #include "record-invalid.h"
+#include "common-cmdline.h"
 
 static int dflag, eval, fflag, iflag, Pflag, vflag, stdin_ok;
 static int rflag, Iflag;
@@ -467,6 +468,8 @@ static void init_id_ht(void)
  */
 int main(int argc, char *argv[])
 {
+  common_main(argc, argv, "rm", "/bin/rm.real", usage, NULL);
+
   int ch;
   char *p;
 

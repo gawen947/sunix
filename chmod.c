@@ -44,6 +44,7 @@
 
 #include "bsd.h"
 #include "record-invalid.h"
+#include "common-cmdline.h"
 
 static void usage(void);
 
@@ -75,6 +76,8 @@ int main(int argc, char *argv[])
     { "no-preserve-root", no_argument, NULL, OPT_NO_ROOT },
     { NULL, 0, NULL, 0 }
   };
+
+  common_main(argc, argv, "chmod", "/bin/chmod.real", usage, opts);
 
   set = NULL;
   Hflag = Lflag = Rflag = fflag = hflag = vflag = cflag = rootflg = 0;

@@ -45,6 +45,7 @@
 
 #include "bsd.h"
 #include "record-invalid.h"
+#include "common-cmdline.h"
 
 static int fflag; /* Unlink existing files. */
 static int Fflag; /* Remove empty directories also. */
@@ -228,6 +229,8 @@ static int linkit(const char *source, const char *target, int isdir)
 
 int main(int argc, char *argv[])
 {
+  common_main(argc, argv, "ln", "/bin/ln.real", usage, NULL);
+
   struct stat sb;
   char *p, *targetdir;
   int ch, exitval;

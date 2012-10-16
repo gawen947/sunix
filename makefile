@@ -30,10 +30,17 @@ ifeq ($(ARCH),x86_64)
         TLIBC_SRC += _x86_64_syscall.S _x86_64_syscall.c
 endif
 
+CFLAGS += -DVERSION="\"$(shell cat VERSION)\""
+commit = $(shell ./hash.sh)
+ifneq ($(commit), UNKNOWN)
+	CFLAGS += -DCOMMIT="\"$(commit)\""
+	CFLAGS += -DPARTIAL_COMMIT="\"$(shell echo $(commit) | cut -c1-8)\""
+endif
+
 all: true false quickexec autorestart uptime-ng cat echo basename sleep unlink \
 		 yes link args-length gpushd-server gpushd-client xte-bench readahead ln   \
 		 rm cp mv ls cat mkdir test pwd kill par chmod seq clear chown rmdir base  \
-		 sizeof crc32 sys_sync sync ascify
+		 sizeof crc32 sys_sync sync asciify
 	strip $^
 
 true: true.c common.h
@@ -82,25 +89,25 @@ clear: clear.c $(TLIBC_SRC)
 	$(CC) $(FREE_CFLAGS) $^ -o $@
 
 # directly ported from bsd base system
-ln: ln.c bsd.c record-invalid.c
+ln: ln.c bsd.c record-invalid.c fallback.c common-cmdline.c
 	$(CC) $(CFLAGS) -DNO_HTABLE -DNO_STRMODE -DNO_SETMODE $^ -o $@
 
-rm: rm.c bsd.c htable.c record-invalid.c
+rm: rm.c bsd.c htable.c record-invalid.c fallback.c common-cmdline.c
 	$(CC) $(CFLAGS) -DNO_SETMODE $^ -o $@
 
-cp: cp.c bsd.c record-invalid.c
+cp: cp.c bsd.c record-invalid.c fallback.c common-cmdline.c
 	$(CC) $(CFLAGS) -DNO_HTABLE -DNO_STRMODE -DNO_SETMODE $^ -o $@
 
-mv: mv.c bsd.c htable.c record-invalid.c
+mv: mv.c bsd.c htable.c record-invalid.c fallback.c common-cmdline.c
 	$(CC) $(CFLAGS) $^ -DNO_SETMODE -o $@
 
-ls: ls.c bsd.c htable.c record-invalid.c iobuf.c iobuf_stdout.c
+ls: ls.c bsd.c htable.c record-invalid.c fallback.c common-cmdline.c iobuf.c iobuf_stdout.c
 	$(CC) $(CFLAGS) $^ -DCOLORLS -DNO_SETMODE -ltinfo -o $@
 
-cat: cat.c bsd.c record-invalid.c
+cat: cat.c bsd.c record-invalid.c fallback.c common-cmdline.c
 	$(CC) $(CFLAGS) -DNO_HTABLE -DNO_STRMODE -DNO_SETMODE $^ -o $@
 
-mkdir: mkdir.c bsd.c record-invalid.c
+mkdir: mkdir.c bsd.c record-invalid.c fallback.c common-cmdline.c
 	$(CC) $(CFLAGS) $^ -DNO_HTABLE -DNO_STRMODE -o $@
 
 test: test.c record-invalid.c
@@ -112,13 +119,13 @@ pwd: pwd.c record-invalid.c
 kill: kill.c record-invalid.c
 	$(CC) $(CFLAGS) $^ -o $@
 
-chmod: chmod.c bsd.c record-invalid.c
+chmod: chmod.c bsd.c record-invalid.c fallback.c common-cmdline.c
 	$(CC) $(CFLAGS) -DNO_HTABLE $^ -o $@
 
 seq: seq.c record-invalid.c
 	$(CC) $(CFLAGS) -lm $^ -o $@
 
-chown: chown.c record-invalid.c
+chown: chown.c record-invalid.c fallback.c common-cmdline.c
 	$(CC) $(CFLAGS) $^ -o $@
 # end of bsd ports
 

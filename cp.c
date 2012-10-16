@@ -68,6 +68,7 @@
 
 #include "bsd.h"
 #include "record-invalid.h"
+#include "common-cmdline.h"
 
 typedef struct {
   char *p_end;            /* pointer to NULL */
@@ -416,6 +417,8 @@ static void usage(void)
 
 int main(int argc, char *argv[])
 {
+  common_main(argc, argv, "cp", "/bin/cp.real", usage, NULL);
+
   struct stat to_stat, tmp_stat;
   enum op type;
   int Hflag, Lflag, Pflag, ch, fts_options, r, have_trailing_slash;
@@ -473,7 +476,7 @@ int main(int argc, char *argv[])
       break;
     default:
     case '?':
-      record_invalid(argv[0], argv[optind - 1]);
+      record_invalid(argv[0], argv[optind]);
       usage();
     }
   argc -= optind;

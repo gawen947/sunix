@@ -46,6 +46,7 @@
 
 #include "bsd.h"
 #include "record-invalid.h"
+#include "common-cmdline.h"
 
 static int  build(char *, mode_t);
 static void usage(void);
@@ -66,6 +67,8 @@ int main(int argc, char *argv[])
     { "context", required_argument, NULL, 'Z' },
     { NULL, 0, NULL, 0 }
   };
+
+  common_main(argc, argv, "mkdir", "/bin/mkdir.real", usage, opts);
 
   omode = pflag = 0;
   mode = NULL;

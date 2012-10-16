@@ -52,6 +52,7 @@
 
 #include "bsd.h"
 #include "record-invalid.h"
+#include "common-cmdline.h"
 
 static int bflag, eflag, nflag, sflag, tflag, vflag;
 static int rval;
@@ -79,6 +80,8 @@ static int udom_open(const char *path, int flags);
 
 int main(int argc, char *argv[])
 {
+  common_main(argc, argv, "cat", "/bin/cat.real", usage, NULL);
+
   int ch;
 
   while ((ch = getopt_long(argc, argv, "benstuv", NULL, NULL)) != -1)

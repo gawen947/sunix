@@ -47,6 +47,7 @@
 #include <unistd.h>
 
 #include "record-invalid.h"
+#include "common-cmdline.h"
 
 static gid_t a_gid(const char *);
 static uid_t a_uid(const char *);
@@ -129,6 +130,8 @@ int main(int argc, char **argv)
     { "verbose", no_argument, NULL, 'v' },
     { NULL, 0, NULL, 0 }
   };
+
+  common_main(argc, argv, "chown", "/bin/chown.real", usage, opts);
 
   Hflag = Lflag = Rflag = fflag = hflag = vflag = xflag = cflag = rootflg =  0;
   while ((ch = getopt_long(argc, argv, "HLPRfhcvx", opts, NULL)) != -1)
