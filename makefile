@@ -40,7 +40,7 @@ endif
 all: true false quickexec autorestart uptime-ng cat echo basename sleep unlink \
 		 yes link args-length gpushd-server gpushd-client xte-bench readahead ln   \
 		 rm cp mv ls cat mkdir test pwd kill par chmod seq clear chown rmdir base  \
-		 sizeof crc32 sys_sync sync asciify
+		 sizeof crc32 sys_sync sync asciify qdaemon
 	strip $^
 
 true: true.c common.h
@@ -153,6 +153,9 @@ base: base.c safe-call.c
 asciify: asciify.c iobuf.c iobuf_stdout.c
 	$(CC) $(CFLAGS) $^ -o $@
 
+qdaemon: qdaemon.c
+	$(CC) $(CFLAGS) $^ -o $@
+
 sizeof: sizeof.c iobuf.c
 	$(CC) $(CFLAGS) $^ -o $@
 
@@ -165,7 +168,7 @@ clean:
 	$(RM) true false quickexec autorestart uptime-ng cat echo basename sleep \
 				unlink yes args-length gpushd-server gpushd-client link xte-bench  \
 				readahead ln rm cp mv ls cat mkdir test pwd kill par chmod seq     \
-			  clear chown rmdir base sizeof crc32 sys_sync sync asciify
+			  clear chown rmdir base sizeof crc32 sys_sync sync asciify qdaemon
 
 core-install: all
 	@echo "Installing core files, hope you've backed up coreutils"
@@ -200,6 +203,7 @@ debian-uninstall-core:
 	@sh debian-uninstall-core.sh
 
 install: all
+	$(INSTALL) qdaemon $(BIN)
 	$(INSTALL) asciify $(BIN)
 	$(INSTALL) sizeof $(BIN)
 	$(INSTALL) base $(BIN)
