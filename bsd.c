@@ -1,5 +1,5 @@
 /* File: bsd.c
-   Time-stamp: <2013-01-17 21:03:25 gawen>
+   Time-stamp: <2013-01-17 21:26:12 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -295,9 +295,9 @@ mode_t getmode(const void *bbox, mode_t omode)
 
     case 'o':
       value = newmode & S_IRWXO;
-    common:     if (set->cmd2 & CMD2_CLR) {
-        clrval =
-          (set->cmd2 & CMD2_SET) ?  S_IRWXO : value;
+    common:
+      if (set->cmd2 & CMD2_CLR) {
+        clrval = (set->cmd2 & CMD2_SET) ?  S_IRWXO : value;
         if (set->cmd2 & CMD2_UBITS)
           newmode &= ~((clrval<<6) & set->bits);
         if (set->cmd2 & CMD2_GBITS)
@@ -443,10 +443,15 @@ void * setmode(const char *p)
         break;
       case 's':
         /* If only "other" bits ignore set-id. */
-        if (!who || who & ~S_IRWXO)
+        if(!who || who & ~S_IRWXO)
           perm |= S_ISUID|S_ISGID;
         break;
         /* If only "other" bits ignore sticky. */
+        break;
+      case 't':
+        /* If not "other" bits ignore sticky. */
+        if(!who || who & S_IRWXO)
+          perm |= S_ISVTX;
         break;
       case 'w':
         perm |= S_IWUSR|S_IWGRP|S_IWOTH;
