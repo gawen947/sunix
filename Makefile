@@ -218,8 +218,8 @@ install: all
 	$(INSTALL) args-length $(BIN)
 	$(INSTALL) gpushd-server $(BIN)
 	$(INSTALL) gpushd-client $(BIN)
-	
-	# scripts
+
+# scripts
 	$(MKDIR)   $(LIBSH)
 	$(INSTALL_DATA) gpushd.sh $(LIBSH)
 	$(INSTALL) note-pop $(BIN)
@@ -228,7 +228,7 @@ install: all
 	$(INSTALL) note-getall $(BIN)
 	$(INSTALL) note-info $(BIN)
 	$(SED) -i 's/##PREFIX##/\/usr\/local/g' \
-  	$(BIN)note-pop                        \
+	$(BIN)note-pop                        \
 		$(BIN)note-get                        \
 	  $(BIN)note-push                       \
 		$(BIN)note-getall                     \
