@@ -1,7 +1,7 @@
 /* File: quickexec.c
    Time-stamp: <2011-06-11 15:22:47 gawen>
 
-   Copyright (C) 2010 David Hauweele <david.hauweele@gmail.com>
+   Copyright (C) 2010 David Hauweele <david@hauweele.net>
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

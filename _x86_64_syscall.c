@@ -1,7 +1,7 @@
 /* File: _x86_64_syscall.c
    Time-stamp: <2010-11-24 00:45:14 gawen>
 
-   Copyright (C) 2010 David Hauweele <david.hauweele@gmail.com>
+   Copyright (C) 2010 David Hauweele <david@hauweele.net>
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

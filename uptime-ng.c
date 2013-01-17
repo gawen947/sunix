@@ -1,5 +1,5 @@
 /* Publied under the GNU General Public License v3
-   By David Hauweele <david.hauweele@gmail.com>
+   By David Hauweele <david@hauweele.net>
  */
 
 #include <stdio.h>
