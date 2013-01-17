@@ -1,5 +1,5 @@
 /* File: bsd.c
-   Time-stamp: <2012-01-30 21:37:29 gawen>
+   Time-stamp: <2013-01-17 21:03:25 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -179,7 +179,7 @@ static void *retrieve_user(const void *key, void *optarg)
     char *str = malloc(32);
     if(!str)
       err(1, "malloc");
-    (void)sprintf(str, "%d", uid);
+    (void)sprintf(str, "%ld", uid);
     return str;
   }
 
@@ -196,7 +196,7 @@ static void *retrieve_group(const void *key, void *optarg)
     char *str = malloc(32);
     if(!str)
       err(1, "malloc");
-    (void)sprintf(str, "%d", gid);
+    (void)sprintf(str, "%ld", gid);
     return str;
   }
 
