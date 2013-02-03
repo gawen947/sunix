@@ -1,5 +1,5 @@
 /* File: iobuf.c
-   Time-stamp: <2012-04-03 21:43:24 gawen>
+   Time-stamp: <2013-02-03 23:44:08 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -38,8 +38,6 @@
 #include <stdlib.h>
 
 #include "iobuf.h"
-
-#define IOBUF_SIZE 65536
 
 #ifndef MIN
 # define MIN(a, b) ((a) < (b) ? (a) : (b))
@@ -185,8 +183,32 @@ int iobuf_putc(char c, iofile_t file)
 
 off_t iobuf_lseek(iofile_t file, off_t offset, int whence)
 {
-  if(whence == SEEK_CUR)
-    offset -= IOBUF_SIZE - file->read_size;
+  if(whence == SEEK_CUR) {
+    /* There may be an overflow here. We merely assume that the user won't use
+       an offset large enough to overflow. */
+    off_t partial = offset - file->read_size;
+
+     /* If we seek inside the buffer (short relative seek) then we may avoid
+        having to drain the buffers. This may improve the performances as most
+        relative seeks are very short and absolute seeks are generally
+        unrecoverable. */
+    if(partial > 0)
+      offset = partial;
+    else if(partial + IOBUF_SIZE < 0)
+      offset = - (offset + file->read_size);
+    else {
+      file->read_buf  += offset;
+      file->read_size -= offset;
+
+      /* We do not know about the absolute offset location in the file. As it
+         would inflict a slight overhead to other funtions just for the benefit
+         of returning the absolute location that most peoples will ignore in
+         this specific case, we just ignore and return zero to let the user know
+         that one syscall has been spared. */
+      return 0;
+    }
+  }
+
   off_t res = lseek(file->fd, offset, whence);
   if(res < 0)
     return res;
@@ -200,12 +222,35 @@ off_t iobuf_lseek(iofile_t file, off_t offset, int whence)
   return res;
 }
 
-#ifndef __FreeBSD__
 #ifdef _LARGEFILE64_SOURCE
 off64_t iobuf_lseek64(iofile_t file, off64_t offset, int whence)
 {
-  if(whence == SEEK_CUR)
-    offset -= IOBUF_SIZE - file->read_size;
+  if(whence == SEEK_CUR) {
+    /* There may be an overflow here. We merely assume that the user won't use
+       an offset large enough to overflow. */
+    off64_t partial = offset - file->read_size;
+
+     /* If we seek inside the buffer (short relative seek) then we may avoid
+        having to drain the buffers. This may improve the performances as most
+        relative seeks are very short and absolute seeks are generally
+        unrecoverable. */
+    if(partial > 0)
+      offset = partial;
+    else if(partial + IOBUF_SIZE < 0)
+      offset = - (offset + file->read_size);
+    else {
+      file->read_buf  += offset;
+      file->read_size -= offset;
+
+      /* We do not know about the absolute offset location in the file. As it
+         would inflict a slight overhead to other funtions just for the benefit
+         of returning the absolute location that most peoples will ignore in
+         this specific case, we just ignore and return zero to let the user know
+         that one syscall has been spared. */
+      return 0;
+    }
+  }
+
   off64_t res = lseek64(file->fd, offset, whence);
   if(res < 0)
     return res;
@@ -219,4 +264,3 @@ off64_t iobuf_lseek64(iofile_t file, off64_t offset, int whence)
   return res;
 }
 #endif /* _LARGEFILE64_SOURCE */
-#endif /* __FreeBSD__ */

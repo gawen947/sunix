@@ -1,5 +1,5 @@
 /* File: iobuf.h
-   Time-stamp: <2012-04-03 21:45:20 gawen>
+   Time-stamp: <2013-02-03 23:54:17 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.
@@ -34,6 +34,18 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <fcntl.h>
+
+#define IOBUF_SIZE 65536
+
+/* TODO: Define OFF_T_MIN and OFF_T_MAX. */
+
+#define MIN_LSEEK_OFFSET OFF_T_MIN + IOBUF_SIZE
+#define MAX_LSEEK_OFFSET OFF_T_MAX - IOBUF_SIZE
+
+#ifdef _LARGEFILE64_SOURCE_
+# define MIN_LSEEK64_OFFSET OFF64_T_MIN + IOBUF_SIZE
+# define MAX_LSEEK64_OFFSET OFF64_T_MAX - IOBUF_SIZE
+#endif /* _LARGEFILE64_SOURCE */
 
 typedef struct iofile * iofile_t;
 
@@ -70,17 +82,27 @@ int iobuf_close(iofile_t file);
 int iobuf_putc(char c, iofile_t file);
 
 /* The iobuf_lseek() function repositions the offset of the open stream
-   associated with the file argument to the argument offset according
-   to the directive whence. For details see lseek(). */
+   associated with the file argument to the argument offset according to the
+   directive whence. For details see lseek(). There are however two differences
+   from the original lseek call. First when using SEEK_CUR directive whence the
+   function may return zero instead of the absolute location offset to indicate
+   that one lseek syscall has been spared. Second the offset when using the
+   SEEK_CUR directive whence must be comprised between two constants
+   MIN_LSEEK_OFFSET and MAX_LSEEK_OFFSET. These values are large enough so the
+   user may ensure that every seek will be comprised in this interval. */
 off_t iobuf_lseek(iofile_t file, off_t offset, int whence);
 
-#ifndef __FreeBSD__
 #ifdef _LARGEFILE64_SOURCE
 /* The iobuf_lseek64() function repositions the offset of the open stream
-   associated with the file argument to the argument offset according
-   to the directive whence. For details see lseek64() */
+   associated with the file argument to the argument offset according to the
+   directive whence. For details see lseek64(). There are however two
+   differences from the original lseek call. First when using SEEK_CUR directive
+   whence the function may return zero instead of the absolute location offset
+   to indicate that one lseek syscall has been spared. Second the offset when
+   using the SEEK_CUR directive whence must be comprised between two constants
+   MIN_LSEEK64_OFFSET and MAX_LSEEK64_OFFSET. These values are large enough so
+   the user may ensure that every seek will be comprised in this interval. */
 off64_t iobuf_lseek64(iofile_t file, off64_t offset, int whence);
 #endif /* _LARGEFILE64_SOURCE */
-#endif /* __FreeBSD__ */
 
 #endif /* _IOBUF_H_ */
