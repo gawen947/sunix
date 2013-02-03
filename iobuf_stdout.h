@@ -28,6 +28,9 @@
    OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
    SUCH DAMAGE. */
 
+#ifndef _IOBUF_STDOUT_H_
+#define _IOBUF_STDOUT_H_
+
 #include "iobuf.h"
 
 iofile_t iobuf_stdout;
@@ -44,3 +47,5 @@ void iobuf_stdout_destroy(void);
 /* The classical printf function, fully buffered instead
    of line buffered. */
 int iobuf_printf(const char *format, ...);
+
+#endif /* _IOBUF_STDOUT_H_ */
