@@ -30,7 +30,7 @@
 
 #include "iobuf_stdout.h"
 
-#define IOBUF_SIZE 4096
+#define IN_IOBUF_SIZE 4096
 
 /* Converts a wide char to an ASCII char. */
 const char * asciify_wchar(wchar_t wchar)
@@ -128,8 +128,8 @@ void proceed(int fd)
   while(1) {
     int bsize;
     int index = 0;
-    char buf[IOBUF_SIZE];
-    ssize_t n = read(fd, buf + offset, IOBUF_SIZE - offset);
+    char buf[IN_IOBUF_SIZE];
+    ssize_t n = read(fd, buf + offset, IN_IOBUF_SIZE - offset);
 
     if(n < 0)
       err(1, "read error");
