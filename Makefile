@@ -40,7 +40,7 @@ endif
 all: true false quickexec autorestart uptime-ng cat echo basename sleep unlink \
 		 yes link args-length gpushd-server gpushd-client xte-bench readahead ln   \
 		 rm cp mv ls cat mkdir test pwd kill par chmod seq clear chown rmdir base  \
-		 sizeof crc32 sys_sync sync asciify qdaemon
+		 sizeof crc32 sys_sync sync asciify qdaemon fpipe
 	strip $^
 
 true: true.c common.h
@@ -162,12 +162,15 @@ sizeof: sizeof.c iobuf.c
 crc32: crc32-file.c crc32.c
 	$(CC) $(CFLAGS) $^ -o $@
 
+fpipe: fpipe.c
+	$(CC) $(CFLAGS) $^ -o $@
+
 .PHONY : clean install
 
 clean:
 	$(RM) true false quickexec autorestart uptime-ng cat echo basename sleep \
 				unlink yes args-length gpushd-server gpushd-client link xte-bench  \
-				readahead ln rm cp mv ls cat mkdir test pwd kill par chmod seq     \
+				readahead ln rm cp mv ls cat mkdir test pwd kill par chmod seq fpipe  \
 			  clear chown rmdir base sizeof crc32 sys_sync sync asciify qdaemon
 
 core-install: all
@@ -218,6 +221,7 @@ install: all
 	$(INSTALL) args-length $(BIN)
 	$(INSTALL) gpushd-server $(BIN)
 	$(INSTALL) gpushd-client $(BIN)
+	$(INSTALL) fpipe $(BIN)
 
 # scripts
 	$(MKDIR)   $(LIBSH)
