@@ -193,6 +193,36 @@ enum ignore_modes {
   IGN_MINIMAL
 };
 
+static void strflargetime(char *s, size_t max, time_t t) 
+{
+  char c;
+  t -= time(NULL);
+  t /= 365 * 86400;
+
+  if(t < 1000000) {
+    t /= 1000;
+    c  = 'K';
+  } else if(t < 1000000000) {
+    t /= 1000000;
+    c  = 'M';
+  } else if(t < 1000000000000LL) {
+    t /= 1000000000;
+    c  = 'G';
+  } else if(t < 1000000000000000LL) {
+    t /= 1000000000000LL;
+    c  = 'T';
+  } else if(t < 1000000000000000000LL) {
+    t /= 1000000000000000LL;
+    c  = 'P';
+  } else {
+    t /= 1000000000000000000LL;
+    c  = 'E';
+  }
+
+  /* FIXME: lu or llu ? */
+  snprintf(s, max, "%lu %cyr", t, c);
+}
+
 static int prn_normal(const char *s)
 {
   mbstate_t mbs;
@@ -735,13 +765,13 @@ static int printaname(const FTSENT *p, u_long inodefield, u_long sizefield)
  */
 static void printdev(size_t width, dev_t dev)
 {
-
   (void)iobuf_printf("%#*jx ", (u_int)width, (uintmax_t)dev);
 }
 
 static void printtime(time_t ftime)
 {
   char longstring[80];
+  struct tm *tm;
   static time_t now = 0;
   const char *format;
   static int d_first = -1;
@@ -763,7 +793,23 @@ static void printtime(time_t ftime)
   else
     /* mmm dd  yyyy || dd mmm  yyyy */
     format = d_first ? "%e %b  %Y" : "%b %e  %Y";
-  strftime(longstring, sizeof(longstring), format, localtime(&ftime));
+
+  /* Localtime may return NULL in case of error.
+     In particular in case of a very large date.
+     When such a case arise we should format the
+     date manually. */
+  tm = localtime(&ftime);
+
+  if(tm == NULL) {
+    switch(errno) {
+    case EOVERFLOW:
+      strflargetime(longstring, sizeof(longstring), ftime);
+      break;
+    default:
+      err(1, "cannot format time");
+    }
+  } else
+    strftime(longstring, sizeof(longstring), format, tm);
   iobuf_write(iobuf_stdout, longstring, strlen(longstring));
   iobuf_putchar(' ');
 }
@@ -1063,7 +1109,7 @@ int main(int argc, char *argv[])
 {
   static char dot[] = ".", *dotav[] = {dot, NULL};
   struct winsize win;
-  int ch, fts_options, notused;
+  int ch, fts_options;
   char *p;
 #ifdef COLORLS
   char termcapbuf[1024];  /* termcap definition buffer */
