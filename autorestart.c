@@ -1,5 +1,4 @@
 /* File: autorestart.c
-   Time-stamp: <2010-07-20 21:39:22 gawen>
 
    Copyright (C) 2010 David Hauweele <david@hauweele.net>
 

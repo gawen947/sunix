@@ -1,5 +1,4 @@
 /* File: link.c
-   Time-stamp: <2011-09-02 20:48:24 gawen>
 
    Copyright (C) 2011 David Hauweele <david@hauweele.net>
 

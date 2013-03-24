@@ -1,5 +1,4 @@
 /* File: sleep.c
-   Time-stamp: <2011-06-12 01:49:22 gawen>
 
    Copyright (C) 2011 David Hauweele <david@hauweele.net>
 

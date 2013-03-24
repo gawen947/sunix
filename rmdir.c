@@ -1,5 +1,4 @@
 /* File: rmdir.c
-   Time-stamp: <2012-02-21 22:55:41 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.

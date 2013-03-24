@@ -1,5 +1,4 @@
 /* File: bsd.c
-   Time-stamp: <2013-01-17 21:26:12 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.

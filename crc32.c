@@ -1,5 +1,4 @@
 /* File: crc32.c
-   Time-stamp: <2012-05-26 19:48:37 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.

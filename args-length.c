@@ -1,5 +1,4 @@
 /* File: args-length.c
-   Time-stamp: <2011-10-27 02:10:52 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.

@@ -1,5 +1,4 @@
 /* File: xte-bench.c
-   Time-stamp: <2011-11-27 18:25:19 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.

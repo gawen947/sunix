@@ -1,5 +1,4 @@
 /* File: par.c
-   Time-stamp: <2012-01-28 01:00:34 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.

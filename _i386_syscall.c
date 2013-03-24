@@ -1,5 +1,4 @@
 /* File: _i386_syscall.c
-   Time-stamp: <2010-11-24 00:39:47 gawen>
 
    Copyright (C) 2010 David Hauweele <david@hauweele.net>
 

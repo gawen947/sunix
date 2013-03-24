@@ -1,5 +1,4 @@
 /* File: clear.c
-   Time-stamp: <2012-01-28 04:17:54 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.

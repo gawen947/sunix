@@ -1,5 +1,4 @@
 /* File: gpushd-server.c
-   Time-stamp: <2012-07-02 14:08:39 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.

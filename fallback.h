@@ -1,5 +1,4 @@
 /* File: fallback.h
-   Time-stamp: <2012-10-16 16:00:01 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.

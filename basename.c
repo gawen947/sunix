@@ -1,5 +1,4 @@
 /* File: basename.c
-   Time-stamp: <2011-09-08 01:29:24 gawen>
 
    Copyright (C) 2011 David Hauweele <david@hauweele.net>
 

@@ -1,5 +1,4 @@
 /* File: safe-call.c
-   Time-stamp: <2011-10-27 00:28:25 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.

@@ -1,5 +1,4 @@
 /* File: scat.c
-   Time-stamp: <2010-07-18 13:50:04 gawen>
 
    Copyright (C) 2010 David Hauweele <david@hauweele.net>
 

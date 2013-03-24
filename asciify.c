@@ -1,5 +1,4 @@
 /* File: asciify.c
-   Time-stamp: <2012-09-25 17:29:11 gawen>
 
    Copyright (C) 2012 David Hauweele <david@hauweele.net>
 

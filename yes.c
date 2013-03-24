@@ -1,5 +1,4 @@
 /* File: yes.c
-   Time-stamp: <2011-06-12 02:34:50 gawen>
 
    Copyright (C) 2011 David Hauweele <david@hauweele.net>
 

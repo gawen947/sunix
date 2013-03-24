@@ -1,5 +1,4 @@
 /* File: _x86_64_syscall.c
-   Time-stamp: <2010-11-24 00:45:14 gawen>
 
    Copyright (C) 2010 David Hauweele <david@hauweele.net>
 

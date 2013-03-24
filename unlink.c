@@ -1,5 +1,4 @@
 /* File: unlink.c
-   Time-stamp: <2011-06-12 02:06:52 gawen>
 
    Copyright (C) 2011 David Hauweele <david@hauweele.net>
 

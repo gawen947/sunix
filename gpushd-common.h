@@ -1,5 +1,4 @@
 /* File: gpushd-common.h
-   Time-stamp: <2012-07-01 22:16:50 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.

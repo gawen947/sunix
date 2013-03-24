@@ -1,5 +1,4 @@
 /* File: fpipe.c
-   Time-stamp: <2013-02-08 03:30:45 gawen>
 
    Copyright (c) 2013 David Hauweele <david@hauweele.net>
    All rights reserved.

@@ -1,5 +1,4 @@
 /* File: sizeof.c
-   Time-stamp: <2012-03-26 18:46:10 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.

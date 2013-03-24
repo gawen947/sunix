@@ -1,5 +1,4 @@
 /* File: record-invalid.c
-   Time-stamp: <2012-02-21 23:50:25 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.

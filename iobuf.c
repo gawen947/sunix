@@ -1,5 +1,4 @@
 /* File: iobuf.c
-   Time-stamp: <2013-02-03 23:44:08 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.

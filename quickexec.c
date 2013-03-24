@@ -1,5 +1,4 @@
 /* File: quickexec.c
-   Time-stamp: <2011-06-11 15:22:47 gawen>
 
    Copyright (C) 2010 David Hauweele <david@hauweele.net>
 

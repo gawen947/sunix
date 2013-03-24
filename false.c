@@ -1,5 +1,4 @@
 /* File: false.c
-   Time-stamp: <2010-03-30 17:12:41 gawen>
 
    Copyright (C) 2010 David Hauweele <david@hauweele.net>
 

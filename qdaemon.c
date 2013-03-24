@@ -1,5 +1,4 @@
 /* File: qdaemon.c
-   Time-stamp: <2012-11-05 20:54:34 gawen>
 
    Copyright (C) 2012 David Hauweele <david@hauweele.net>
 

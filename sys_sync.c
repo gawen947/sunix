@@ -1,5 +1,4 @@
 /* File: sys_sync.c
-   Time-stamp: <2012-06-22 13:22:22 gawen>
 
    Copyright (c) 2012 David Hauweele <david@hauweele.net>
    All rights reserved.

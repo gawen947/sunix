@@ -1,5 +1,4 @@
 /* File: echo.c
-   Time-stamp: <2012-04-21 16:13:24 gawen>
 
    Copyright (C) 2011 David Hauweele <david@hauweele.net>
 

@@ -1,5 +1,4 @@
 /* File: htable.h
-   Time-stamp: <2012-01-25 15:13:19 gawen>
 
    Copyright (c) 2011 David Hauweele <david@hauweele.net>
    All rights reserved.

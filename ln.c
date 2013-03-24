@@ -1,5 +1,4 @@
 /* File: ln.c
-   Time-stamp: <2012-02-21 22:34:22 gawen>
 
    Copyright (c) 1987, 1993, 1994
      The Regents of the University of California. All rights reserved.

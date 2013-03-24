@@ -1,5 +1,4 @@
 /* File: tlibc.c
-   Time-stamp: <2011-09-08 01:45:09 gawen>
 
    Copyright (C) 2010 David Hauweele <david@hauweele.net>
 
