@@ -28,6 +28,9 @@
    SUCH DAMAGE. */
 
 #define _BSD_SOURCE
+#ifdef __linux__
+# define _POSIX_C_SOURCE 200112 
+#endif /* __linux__ */
 
 #include <sys/time.h>
 #include <sys/types.h>
