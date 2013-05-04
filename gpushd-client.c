@@ -45,7 +45,6 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <pthread.h>
-#include <endian.h>
 #include <signal.h>
 #include <err.h>
 

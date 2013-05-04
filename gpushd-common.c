@@ -45,8 +45,13 @@
 #include <assert.h>
 #include <pthread.h>
 #include <signal.h>
-#include <endian.h>
 #include <err.h>
+
+#ifdef __FreeBSD__
+#include <sys/endian.h>
+#else
+#include <endian.h>
+#endif /* __FreeBSD__ */
 
 #include "safe-call.h"
 #include "gpushd.h"

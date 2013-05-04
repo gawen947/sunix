@@ -28,8 +28,6 @@
    SUCH DAMAGE. */
 
 #define _BSD_SOURCE
-#define _POSIX_SOURCE
-#define _POSIX_C_SOURCE 201111L
 
 #include <sys/time.h>
 #include <sys/types.h>
@@ -50,7 +48,6 @@
 #include <assert.h>
 #include <pthread.h>
 #include <signal.h>
-
 #include <fcntl.h>
 #include <getopt.h>
 #include <errno.h>
