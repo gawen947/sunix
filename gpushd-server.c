@@ -29,7 +29,7 @@
 
 #define _BSD_SOURCE
 #ifdef __linux__
-# define _POSIX_C_SOURCE 200112 
+# define _POSIX_C_SOURCE 200112
 #endif /* __linux__ */
 
 #include <sys/time.h>
@@ -883,7 +883,6 @@ static bool proceed_request(int cli, struct message *request)
 
 static void clean_thread(int idx)
 {
-  close(pool.fd_cli[idx]);
 
   /* signal the cleaner thread */
   pthread_mutex_lock(&pool.clr_mutex);
@@ -892,6 +891,7 @@ static void clean_thread(int idx)
 
   /* free the thread slot */
   pthread_mutex_lock(&pool.st_mutex);
+  close(pool.fd_cli[idx]);
   CLEAR_BIT(idx, pool.st_threads);
   pthread_mutex_unlock(&pool.st_mutex);
   sem_post(&pool.available);
