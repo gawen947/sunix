@@ -40,7 +40,7 @@ endif
 all: true false quickexec autorestart uptime-ng cat echo basename sleep unlink \
 		 yes link args-length gpushd-server gpushd-client xte-bench readahead ln   \
 		 rm cp mv ls cat mkdir test pwd kill par chmod seq clear chown rmdir base  \
-		 sizeof crc32 sys_sync sync asciify qdaemon fpipe
+		 sizeof crc32 sys_sync sync asciify qdaemon fpipe setpgrp
 	strip $^
 
 true: true.c common.h
@@ -132,6 +132,9 @@ chown: chown.c record-invalid.c fallback.c common-cmdline.c
 rmdir: rmdir.c record-invalid.c
 	$(CC) $(CFLAGS) $^ -o $@
 
+setpgrp: setpgrp.c
+	$(CC) $(CFLAGS) $^ -o $@
+
 gpushd-server: safe-call.c safe-call.h gpushd.h gpushd-server.c gpushd-common.c gpushd-common.h iobuf.c iobuf.h
 	$(CC) $(CFLAGS) -pthread -lrt -DUSE_THREAD -DNDEBUG=1 $^ -o $@
 
@@ -206,6 +209,7 @@ debian-uninstall-core:
 	@sh debian-uninstall-core.sh
 
 install: all
+	$(INSTALL) setpgrp $(BIN)
 	$(INSTALL) qdaemon $(BIN)
 	$(INSTALL) asciify $(BIN)
 	$(INSTALL) sizeof $(BIN)
