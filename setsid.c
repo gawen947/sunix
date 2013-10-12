@@ -31,7 +31,7 @@
 #include <unistd.h>
 #include <err.h>
 
-int main(int argc, char *argv[], char *envp[])
+int main(int argc, char *argv[])
 {
   pid_t pid;
 
@@ -50,7 +50,7 @@ int main(int argc, char *argv[], char *envp[])
   if(setsid() < 0)
     err(1, "cannot create session");
 
-  execve(argv[1], argv + 1, envp);
+  execvp(argv[1], argv + 1);
   err(1, "cannot execute %s", argv[1]);
   return 1;
 }

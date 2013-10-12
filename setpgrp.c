@@ -30,7 +30,7 @@
 #include <unistd.h>
 #include <err.h>
 
-int main(int argc, char *argv[], char *envp[])
+int main(int argc, char *argv[])
 {
   if(argc < 2)
     errx(1, "usage: %s cmd", argv[0]);
@@ -38,7 +38,7 @@ int main(int argc, char *argv[], char *envp[])
   if(setpgid(0, 0) < 0)
     err(1, "cannot create process group");
 
-  execve(argv[1], argv + 1, envp);
+  execvp(argv[1], argv + 1);
   err(1, "cannot execute %s", argv[1]);
 }
 
