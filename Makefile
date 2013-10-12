@@ -40,7 +40,7 @@ endif
 all: true false quickexec autorestart uptime-ng cat echo basename sleep unlink \
 		 yes link args-length gpushd-server gpushd-client xte-bench readahead ln   \
 		 rm cp mv ls cat mkdir test pwd kill par chmod seq clear chown rmdir base  \
-		 sizeof crc32 sys_sync sync asciify qdaemon fpipe setpgrp
+		 sizeof crc32 sys_sync sync asciify qdaemon fpipe setpgrp setsid
 	strip $^
 
 true: true.c common.h
@@ -117,6 +117,9 @@ pwd: pwd.c record-invalid.c
 	$(CC) $(CFLAGS) $^ -o $@
 
 kill: kill.c record-invalid.c
+	$(CC) $(CFLAGS) $^ -o $@
+
+setsid: setsid.c
 	$(CC) $(CFLAGS) $^ -o $@
 
 chmod: chmod.c bsd.c record-invalid.c fallback.c common-cmdline.c
@@ -201,6 +204,7 @@ core-install: all
 	$(INSTALL) clear /usr/bin
 	$(INSTALL) chown /bin
 	$(INSTALL) rmdir /bin
+	$(INSTALL) setsid /usr/bin
 
 debian-install-core: all
 	@sh debian-install-core.sh

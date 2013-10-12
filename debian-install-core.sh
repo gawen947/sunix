@@ -23,3 +23,4 @@
 ./debian-install-core-file.sh /bin chown
 ./debian-install-core-file.sh /bin rmdir
 ./debian-install-core-file.sh /bin sync
+./debian-install-core-file.sh /usr/bin setsid

@@ -23,3 +23,4 @@
 ./debian-uninstall-core-file.sh /bin/chown
 ./debian-uninstall-core-file.sh /bin/rmdir
 ./debian-uninstall-core-file.sh /bin/sync
+./debian-uninstall-core-file.sh /usr/bin/setsid
