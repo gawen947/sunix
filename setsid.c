@@ -33,13 +33,11 @@
 
 int main(int argc, char *argv[])
 {
-  pid_t pid;
-
   if(argc < 2)
     errx(1, "usage: %s cmd", argv[0]);
 
   if(getpid() == getpgrp()) {
-    pid = fork();
+    pid_t pid = fork();
 
     if(pid < 0)
       err(1, "cannot fork");
