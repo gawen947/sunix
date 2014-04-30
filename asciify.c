@@ -122,7 +122,7 @@ const char * asciify_wchar(wchar_t wchar)
 
 void proceed(int fd)
 {
-  int offset;
+  int offset = 0;
 
   while(1) {
     int bsize;
