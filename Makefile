@@ -11,6 +11,8 @@ PREF=/usr/local/
 BIN=$(PREF)bin/
 LIBSH=$(PREF)lib/sh
 
+SUNIX_PATH=/usr/local/share/sunix
+
 TLIBC_SRC := tlibc.h
 SUBARCH   := $(shell uname -m | sed -e s/i.86/i386/ -e s/sun4u/sparc64/ \
 		                  -e s/arm.*/arm/ -e s/sa110/arm/ \
@@ -180,31 +182,35 @@ clean:
 			  clear chown rmdir base sizeof crc32 sys_sync sync asciify qdaemon
 
 core-install: all
-	@echo "Installing core files, hope you've backed up coreutils"
-	$(INSTALL) true /bin
-	$(INSTALL) false /bin
-	$(INSTALL) cat /bin
-	$(INSTALL) echo /bin
-	$(INSTALL) basename /usr/bin
-	$(INSTALL) sleep /bin
-	$(INSTALL) unlink /usr/bin
-	$(INSTALL) yes /usr/bin
-	$(INSTALL) ln /bin
-	$(INSTALL) rm /bin
-	$(INSTALL) cp /bin
-	$(INSTALL) mv /bin
-	$(INSTALL) ls /bin
-	$(INSTALL) mkdir /bin
-	$(INSTALL) test /usr/bin
-	$(INSTALL) sync /bin
-	$(INSTALL) pwd /bin
-	$(INSTALL) kill /bin
-	$(INSTALL) chmod /bin
-	$(INSTALL) seq /usr/bin
-	$(INSTALL) clear /usr/bin
-	$(INSTALL) chown /bin
-	$(INSTALL) rmdir /bin
-	$(INSTALL) setsid /usr/bin
+	$(MKDIR) $(SUNIX_PATH)/usr/bin
+	$(MKDIR) $(SUNIX_PATH)/usr/sbin
+	$(MKDIR) $(SUNIX_PATH)/bin
+	$(MKDIR) $(SUNIX_PATH)/sbin
+	$(INSTALL) true $(SUNIX_PATH)/bin
+	$(INSTALL) false $(SUNIX_PATH)/bin
+	$(INSTALL) cat $(SUNIX_PATH)/bin
+	$(INSTALL) echo $(SUNIX_PATH)/bin
+	$(INSTALL) basename $(SUNIX_PATH)/usr/bin
+	$(INSTALL) sleep $(SUNIX_PATH)/bin
+	$(INSTALL) unlink $(SUNIX_PATH)/usr/bin
+	$(INSTALL) yes $(SUNIX_PATH)/usr/bin
+	$(INSTALL) ln $(SUNIX_PATH)/bin
+	$(INSTALL) rm $(SUNIX_PATH)/bin
+	$(INSTALL) cp $(SUNIX_PATH)/bin
+	$(INSTALL) mv $(SUNIX_PATH)/bin
+	$(INSTALL) ls $(SUNIX_PATH)/bin
+	$(INSTALL) mkdir $(SUNIX_PATH)/bin
+	$(INSTALL) test $(SUNIX_PATH)/usr/bin
+	$(INSTALL) sync $(SUNIX_PATH)/bin
+	$(INSTALL) pwd $(SUNIX_PATH)/bin
+	$(INSTALL) kill $(SUNIX_PATH)/bin
+	$(INSTALL) chmod $(SUNIX_PATH)/bin
+	$(INSTALL) seq $(SUNIX_PATH)/usr/bin
+	$(INSTALL) clear $(SUNIX_PATH)/usr/bin
+	$(INSTALL) chown $(SUNIX_PATH)/bin
+	$(INSTALL) rmdir $(SUNIX_PATH)/bin
+	$(INSTALL) setsid $(SUNIX_PATH)/usr/bin
+	$(LN) $(SUNIX_PATH)/usr/bin/test $(SUNIX_PATH)/usr/bin/\[
 
 debian-install-core: all
 	@sh debian-install-core.sh
