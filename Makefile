@@ -1,8 +1,9 @@
 CC=gcc
 RM=rm -f
 MKDIR=mkdir -p
+FIND=find
 SED=sed
-LN=ln -s
+LN=ln -sf
 INSTALL=install
 INSTALL_DATA=$(INSTALL) -m 444
 FREE_CFLAGS=-std=c99 -fomit-frame-pointer -s -nostdlib -O2
@@ -179,7 +180,8 @@ clean:
 	$(RM) true false quickexec autorestart uptime-ng cat echo basename sleep \
 				unlink yes args-length gpushd-server gpushd-client link xte-bench  \
 				readahead ln rm cp mv ls cat mkdir test pwd kill par chmod seq fpipe  \
-			  clear chown rmdir base sizeof crc32 sys_sync sync asciify qdaemon
+				clear chown rmdir base sizeof crc32 sys_sync sync asciify qdaemon \
+				setpgrp setsid
 
 core-install: all
 	$(MKDIR) $(SUNIX_PATH)/usr/bin
@@ -211,6 +213,8 @@ core-install: all
 	$(INSTALL) rmdir $(SUNIX_PATH)/bin
 	$(INSTALL) setsid $(SUNIX_PATH)/usr/bin
 	$(LN) $(SUNIX_PATH)/usr/bin/test $(SUNIX_PATH)/usr/bin/\[
+	$(FIND) $(SUNIX_PATH) -type d -exec chmod 755 {} \;
+	$(FIND) $(SUNIX_PATH) -type f -exec chmod 644 {} \;
 
 debian-install-core: all
 	@sh debian-install-core.sh
