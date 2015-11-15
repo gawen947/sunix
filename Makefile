@@ -213,8 +213,7 @@ core-install: all
 	$(INSTALL) rmdir $(SUNIX_PATH)/bin
 	$(INSTALL) setsid $(SUNIX_PATH)/usr/bin
 	$(LN) $(SUNIX_PATH)/usr/bin/test $(SUNIX_PATH)/usr/bin/\[
-	$(FIND) $(SUNIX_PATH) -type d -exec chmod 755 {} \;
-	$(FIND) $(SUNIX_PATH) -type f -exec chmod 644 {} \;
+	$(FIND) $(SUNIX_PATH) -exec chmod 755 {} \;
 
 debian-install-core: all
 	@sh debian-install-core.sh
