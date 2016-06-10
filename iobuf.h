@@ -1,31 +1,26 @@
-/* File: iobuf.h
-
-   Copyright (c) 2012 David Hauweele <david@hauweele.net>
+/* Copyright (c) 2012-2016, David Hauweele <david@hauweele.net>
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-   1. Redistributions of source code must retain the above copyright
-      notice, this list of conditions and the following disclaimer.
-   2. Redistributions in binary form must reproduce the above copyright
-      notice, this list of conditions and the following disclaimer in the
-      documentation and/or other materials provided with the distribution.
-   3. Neither the name of the University nor the names of its contributors
-      may be used to endorse or promote products derived from this software
-      without specific prior written permission.
+   modification, are permitted provided that the following conditions are met:
 
-   THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
-   ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-   ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
-   FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-   DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-   OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-   HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-   OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-   SUCH DAMAGE. */
+    1. Redistributions of source code must retain the above copyright notice, this
+       list of conditions and the following disclaimer.
+    2. Redistributions in binary form must reproduce the above copyright notice,
+       this list of conditions and the following disclaimer in the documentation
+       and/or other materials provided with the distribution.
+
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+   ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+   WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+   ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+   (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+   LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+   ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 #ifndef _IOBUF_H_
 #define _IOBUF_H_
@@ -41,10 +36,10 @@
 #define MIN_LSEEK_OFFSET OFF_T_MIN + IOBUF_SIZE
 #define MAX_LSEEK_OFFSET OFF_T_MAX - IOBUF_SIZE
 
-#ifdef _LARGEFILE64_SOURCE_
+#ifndef __FreeBSD__
 # define MIN_LSEEK64_OFFSET OFF64_T_MIN + IOBUF_SIZE
 # define MAX_LSEEK64_OFFSET OFF64_T_MAX - IOBUF_SIZE
-#endif /* _LARGEFILE64_SOURCE */
+#endif /* __FreeBSD__ */
 
 typedef struct iofile * iofile_t;
 
@@ -71,7 +66,7 @@ ssize_t iobuf_read(iofile_t file, void *buf, size_t count);
    the kernel buffers are not flushed so you may need to sync manually.
    Unlike the standard fflush function this function does not discards
    the read buffer and only affects the write buffer. */
-ssize_t iobuf_flush(iofile_t file);
+int iobuf_flush(iofile_t file);
 
 /* Close a stream. This function also take care of flushing the buffers
    when needed. */
@@ -91,7 +86,7 @@ int iobuf_putc(char c, iofile_t file);
    user may ensure that every seek will be comprised in this interval. */
 off_t iobuf_lseek(iofile_t file, off_t offset, int whence);
 
-#ifdef _LARGEFILE64_SOURCE
+#if !defined(__FreeBSD__) && defined(_LARGEFILE64_SOURCE)
 /* The iobuf_lseek64() function repositions the offset of the open stream
    associated with the file argument to the argument offset according to the
    directive whence. For details see lseek64(). There are however two
@@ -102,6 +97,6 @@ off_t iobuf_lseek(iofile_t file, off_t offset, int whence);
    MIN_LSEEK64_OFFSET and MAX_LSEEK64_OFFSET. These values are large enough so
    the user may ensure that every seek will be comprised in this interval. */
 off64_t iobuf_lseek64(iofile_t file, off64_t offset, int whence);
-#endif /* _LARGEFILE64_SOURCE */
+#endif
 
 #endif /* _IOBUF_H_ */
