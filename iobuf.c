@@ -1,31 +1,26 @@
-/* File: iobuf.c
-
-   Copyright (c) 2012 David Hauweele <david@hauweele.net>
+/* Copyright (c) 2012-2016, David Hauweele <david@hauweele.net>
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
-   modification, are permitted provided that the following conditions
-   are met:
-   1. Redistributions of source code must retain the above copyright
-      notice, this list of conditions and the following disclaimer.
-   2. Redistributions in binary form must reproduce the above copyright
-      notice, this list of conditions and the following disclaimer in the
-      documentation and/or other materials provided with the distribution.
-   3. Neither the name of the University nor the names of its contributors
-      may be used to endorse or promote products derived from this software
-      without specific prior written permission.
+   modification, are permitted provided that the following conditions are met:
 
-   THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
-   ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-   IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-   ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
-   FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-   DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
-   OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-   HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-   LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
-   OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
-   SUCH DAMAGE. */
+    1. Redistributions of source code must retain the above copyright notice, this
+       list of conditions and the following disclaimer.
+    2. Redistributions in binary form must reproduce the above copyright notice,
+       this list of conditions and the following disclaimer in the documentation
+       and/or other materials provided with the distribution.
+
+   THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+   ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+   WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+   DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+   ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+   (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+   LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+   ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+   (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+   SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 
 #define _POSIX_C_SOURCE 200112L
 
@@ -52,17 +47,22 @@ struct iofile {
   char buf[IOBUF_SIZE * 2];
 };
 
-ssize_t iobuf_flush(iofile_t file)
+int iobuf_flush(iofile_t file)
 {
-  ssize_t partial_write;
+  int write_size  = file->write_size;
 
-  partial_write = write(file->fd, file->buf, file->write_size);
-  if(partial_write >= 0) {
-    file->write_size -= partial_write;
-    file->write_buf  -= partial_write;
+  while(write_size) {
+    ssize_t partial_write = write(file->fd, file->buf, write_size);
+    if(partial_write < 0)
+      return partial_write;
+
+    write_size -= partial_write;
   }
 
-  return partial_write;
+  file->write_size = 0;
+  file->write_buf  = file->buf;
+
+  return 0;
 }
 
 iofile_t iobuf_dopen(int fd)
@@ -76,7 +76,11 @@ iofile_t iobuf_dopen(int fd)
   file->read_buf   = file->buf + IOBUF_SIZE;
   file->write_size = file->read_size = 0;
 
+/* We only declare the access pattern on architectures
+   that are known to support posix_fadvise. */
+#if defined(__linux__) || defined(__FreeBSD__)
   posix_fadvise(file->fd, 0, 0, POSIX_FADV_SEQUENTIAL);
+#endif
 
   return file;
 }
@@ -97,6 +101,8 @@ ssize_t iobuf_write(iofile_t file, const void *buf, size_t count)
     ssize_t partial_write;
 
     partial_write = iobuf_flush(file);
+    if(partial_write < 0)
+      return partial_write;
 
     if(count > IOBUF_SIZE) {
       ssize_t full_write;
@@ -122,11 +128,10 @@ ssize_t iobuf_read(iofile_t file, void *buf, size_t count)
     ssize_t partial_read;
 
     if(file->read_size == 0) {
-      if(count > IOBUF_SIZE)
-        return read(file->fd, buf, count);
-
       partial_read = read(file->fd, file->buf + IOBUF_SIZE, IOBUF_SIZE);
-      if(partial_read <= 0)
+      if(partial_read == 0) /* end-of-file */
+        return ret - count;
+      else if(partial_read < 0) /* read error */
         return partial_read;
 
       file->read_size = partial_read;
@@ -221,7 +226,7 @@ off_t iobuf_lseek(iofile_t file, off_t offset, int whence)
   return res;
 }
 
-#ifdef _LARGEFILE64_SOURCE
+#if !defined(__FreeBSD__) && defined(_LARGEFILE64_SOURCE)
 off64_t iobuf_lseek64(iofile_t file, off64_t offset, int whence)
 {
   if(whence == SEEK_CUR) {
@@ -262,4 +267,4 @@ off64_t iobuf_lseek64(iofile_t file, off64_t offset, int whence)
 
   return res;
 }
-#endif /* _LARGEFILE64_SOURCE */
+#endif
