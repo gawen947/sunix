@@ -40,6 +40,18 @@ ifneq ($(commit), UNKNOWN)
 	CFLAGS += -DPARTIAL_COMMIT="\"$(shell echo $(commit) | cut -c1-8)\""
 endif
 
+CRC32_CFLAGS = -DUSE_CRC32_C=1
+
+# In FreeBSD systems, sometimes the correct cputype is not picked up.
+# We check the log and enable it when it is available.
+SSE42_SUPPORT=$(shell $(CC) -march=native -dM -E - < /dev/null | grep SSE4_2)
+ifeq ($(SSE42_SUPPORT),)
+  SSE42_SUPPORT=$(shell if [ -f /var/run/dmesg.boot ] ; then grep SSE4\.2 /var/run/dmesg.boot ; fi)
+endif
+ifneq ($(SSE42_SUPPORT),)
+	CRC32_CFLAGS += -msse4.2
+endif
+
 all: true false quickexec autorestart uptime-ng cat echo basename sleep unlink \
 		 yes link args-length gpushd-server gpushd-client xte-bench readahead ln   \
 		 rm cp mv ls cat mkdir test pwd kill par chmod seq clear chown rmdir base  \
@@ -169,7 +181,7 @@ sizeof: sizeof.c iobuf.c
 	$(CC) $(CFLAGS) $^ -o $@
 
 crc32: crc32-file.c crc32.c
-	$(CC) $(CFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $(CRC32_CFLAGS) $^ -o $@
 
 fpipe: fpipe.c
 	$(CC) $(CFLAGS) $^ -o $@

@@ -30,8 +30,18 @@
 #ifndef _CRC32_H_
 #define _CRC32_H_
 
-unsigned long crc32(const unsigned char *s,
-                    unsigned long size,
-                    unsigned long crc);
+#include <stdint.h>
+
+#ifdef USE_CRC32_IEEE
+uint32_t crc32_IEEE(const unsigned char *s,
+                    unsigned long len,
+                    uint32_t crc);
+#endif /* USE_CRC32_IEEE */
+
+#ifdef USE_CRC32_C
+uint32_t crc32_c(const unsigned char *s,
+                 unsigned long len,
+                 uint32_t crc);
+#endif /* USE_CRC32_C */
 
 #endif /* _CRC32_H_ */

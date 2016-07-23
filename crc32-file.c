@@ -41,9 +41,10 @@
 
 int main(int argc, char **argv)
 {
+  /* TODO: accept CRC32 variants from cmdline */
   argv++;
   for(; *argv ; argv++) {
-    unsigned long crc;
+    unsigned long crc = 0;
     ssize_t n;
     int fd;
     unsigned char buf[IOBUF_SIZE];
@@ -53,7 +54,7 @@ int main(int argc, char **argv)
       err(1, "open");
 
     while((n = read(fd, buf, IOBUF_SIZE)) > 0)
-      crc = crc32(buf, n, crc);
+      crc = crc32_c(buf, n, crc);
 
     if(n < 0)
       err(1, "read");
