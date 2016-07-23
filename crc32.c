@@ -1,6 +1,6 @@
 /* File: crc32.c
 
-   Copyright (c) 2012 David Hauweele <david@hauweele.net>
+   Copyright (c) 2012-2016 David Hauweele <david@hauweele.net>
    All rights reserved.
 
    Redistribution and use in source and binary forms, with or without
