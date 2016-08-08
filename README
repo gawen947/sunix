@@ -13,7 +13,6 @@ cat         : Needs rewrite
 echo        : OK
 false       : OK
 true        : OK
-gpushd*     : Needs rewrite
 link        : OK
 quickexec   : Needs valgrind checks
 readahead   : OK

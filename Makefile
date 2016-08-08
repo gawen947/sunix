@@ -10,7 +10,6 @@ FREE_CFLAGS=-std=c99 -fomit-frame-pointer -s -nostdlib -O2
 CFLAGS=-std=c99 -fomit-frame-pointer -O2
 PREF=/usr/local/
 BIN=$(PREF)bin/
-LIBSH=$(PREF)lib/sh
 
 SUNIX_PATH=/usr/local/share/sunix
 
@@ -53,7 +52,7 @@ ifneq ($(SSE42_SUPPORT),)
 endif
 
 all: true false quickexec autorestart uptime-ng cat echo basename sleep unlink \
-		 yes link args-length gpushd-server gpushd-client xte-bench readahead ln   \
+		 yes link args-length xte-bench readahead ln                               \
 		 rm cp mv ls cat mkdir test pwd kill par chmod seq clear chown rmdir base  \
 		 sizeof crc32 sys_sync sync asciify qdaemon fpipe setpgrp setsid
 	strip $^
@@ -153,12 +152,6 @@ rmdir: rmdir.c record-invalid.c
 setpgrp: setpgrp.c
 	$(CC) $(CFLAGS) $^ -o $@
 
-gpushd-server: safe-call.c safe-call.h gpushd.h gpushd-server.c gpushd-common.c gpushd-common.h iobuf.c iobuf.h
-	$(CC) $(CFLAGS) -pthread -lrt -DUSE_THREAD -DNDEBUG=1 $^ -o $@
-
-gpushd-client: safe-call.c safe-call.h gpushd.h gpushd-client.c gpushd-common.c gpushd-common.h
-	$(CC) $(CFLAGS) $^ -o $@
-
 xte-bench: xte-bench.c iobuf.c
 	$(CC) $(CFLAGS) -lm $^ -o $@
 
@@ -189,10 +182,10 @@ fpipe: fpipe.c
 .PHONY : clean install
 
 clean:
-	$(RM) true false quickexec autorestart uptime-ng cat echo basename sleep \
-				unlink yes args-length gpushd-server gpushd-client link xte-bench  \
+	$(RM) true false quickexec autorestart uptime-ng cat echo basename sleep    \
+				unlink yes args-length link xte-bench                                 \
 				readahead ln rm cp mv ls cat mkdir test pwd kill par chmod seq fpipe  \
-				clear chown rmdir base sizeof crc32 sys_sync sync asciify qdaemon \
+				clear chown rmdir base sizeof crc32 sys_sync sync asciify qdaemon     \
 				setpgrp setsid
 
 core-install: all
@@ -248,27 +241,4 @@ install: all
 	$(INSTALL) autorestart $(BIN)
 	$(INSTALL) uptime-ng $(BIN)
 	$(INSTALL) args-length $(BIN)
-	$(INSTALL) gpushd-server $(BIN)
-	$(INSTALL) gpushd-client $(BIN)
 	$(INSTALL) fpipe $(BIN)
-
-# scripts
-	$(MKDIR)   $(LIBSH)
-	$(INSTALL_DATA) gpushd.sh $(LIBSH)
-	$(INSTALL) note-pop $(BIN)
-	$(INSTALL) note-get $(BIN)
-	$(INSTALL) note-push $(BIN)
-	$(INSTALL) note-getall $(BIN)
-	$(INSTALL) note-info $(BIN)
-	$(SED) -i 's/##PREFIX##/\/usr\/local/g' \
-	$(BIN)note-pop                        \
-		$(BIN)note-get                        \
-	  $(BIN)note-push                       \
-		$(BIN)note-getall                     \
-		$(BIN)note-info
-	$(LN) $(BIN)note-pop    $(BIN)todo-pop
-	$(LN) $(BIN)note-get    $(BIN)todo-get
-	$(LN) $(BIN)note-push   $(BIN)todo-push
-	$(LN) $(BIN)note-getall $(BIN)todo-getall
-	$(LN) $(BIN)note-info   $(BIN)todo-info
-
