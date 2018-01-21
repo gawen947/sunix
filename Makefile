@@ -1,4 +1,4 @@
-CC=gcc
+CC=cc
 RM=rm -f
 MKDIR=mkdir -p
 FIND=find
