@@ -58,10 +58,10 @@ all: true false quickexec autorestart uptime-ng cat echo basename sleep unlink \
 	strip $^
 
 true: true.c common.h
-	$(CC) $(FREE_CFLAGS) $^ -o $@
+	$(CC) $(FREE_CFLAGS) true.c -o $@
 
 false: false.c common.h
-	$(CC) $(FREE_CFLAGS) $^ -o $@
+	$(CC) $(FREE_CFLAGS) false.c -o $@
 
 autorestart: autorestart.c
 	$(CC) $(CFLAGS) $^ -o $@
