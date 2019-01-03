@@ -1,24 +1,27 @@
-true - /bin/true
-false - /bin/false
-scat - similar to /bin/cat
+This project has multiple conflicting goals and as such is now obsolete until further notice.
 
-============================
-Summary
-=======
+This project original goal was to povide a taste of the FreeBSD command line into Linux.
+That is basic tools were ported from FreeBSD base system to replace the GNU coreutils equivalent.
+Originally the ported tools were amended to work as a replacement of GNU coreutils under Debian.
+This worked to some extent and dpkg and all shell scripts could happily use them for while.
+However this proved (without surprise) impossible to maintains since many options and behaviors
+are different from one system tool to another. Thus the Makefile was changed to install those
+tools as possible alias for an user interactive shell.
 
-args-length : OK
-autorestart : OK
-basename    : OK
-cat         : Needs rewrite
-echo        : OK
-false       : OK
-true        : OK
-link        : OK
-quickexec   : Needs valgrind checks
-readahead   : OK
-unlink      : OK
-uptime-ng   : Needs rewrite
-xte-bench   : Needs rewrite
-yes         : OK
+A secondary goal was to provide optimized version of some basic UNIX tools. Some tools were
+remade to avoid the C library and reduced to their simpliest. This is the case, for instance,
+of true and false which can do their work with only a single syscall and therefore don't need
+to be linked to any library. The GNU coreutils equivalents do argument parsing and even have
+Native Language Support.
 
-tlibc       : Needs rewrite
+A third goal was to provide a handy set of missing small UNIX utilies. Some of them were later
+separated in a project of their own.
+
+Finally this project was initially just made for fun and many aspect of which were not given
+proper careful thinking.
+
+If it is to be remade, it would be separated into three distincts projects:
+
+  * FreeBSD-flavor: Port of some FreeBSD tools from the latest FreeBSD release to the Linux world.
+  * tiny-core: Optimized version of some basic UNIX tools.
+  * more: Missing small UNIX utilies.
