@@ -3,16 +3,15 @@ This project has multiple conflicting goals and as such is now obsolete until fu
 This project original goal was to povide a taste of the FreeBSD command line into Linux.
 That is basic tools were ported from FreeBSD base system to replace the GNU coreutils equivalent.
 Originally the ported tools were amended to work as a replacement of GNU coreutils under Debian.
-This worked to some extent and dpkg and all shell scripts could happily use them for while.
-However this proved (without surprise) impossible to maintains since many options and behaviors
-are different from one system tool to another. Thus the Makefile was changed to install those
-tools as possible alias for an user interactive shell.
+This worked to some extent and dpkg and all shell scripts could happily use them for a while.
+However this proved (without surprise) impossible to maintain since many options and behaviors
+are different from one system to another. Thus the Makefile was changed to install those tools
+as possible alias for an user interactive shell.
 
 A secondary goal was to provide optimized version of some basic UNIX tools. Some tools were
 remade to avoid the C library and reduced to their simpliest. This is the case, for instance,
 of true and false which can do their work with only a single syscall and therefore don't need
-to be linked to any library. The GNU coreutils equivalents do argument parsing and even have
-Native Language Support.
+to be linked to any library.
 
 A third goal was to provide a handy set of missing small UNIX utilies. Some of them were later
 separated in a project of their own.
